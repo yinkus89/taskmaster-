@@ -1,0 +1,15 @@
+[
+    {
+      "name": "Work",
+      "description": "Tasks related to work or professional activities"
+    },
+    {
+      "name": "Personal",
+      "description": "Personal tasks and activities"
+    },
+    {
+      "name": "Shopping",
+      "description": "Tasks related to purchasing items or managing shopping lists"
+    }
+  ]
+  
