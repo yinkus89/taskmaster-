@@ -2,6 +2,10 @@ const express = require('express');
 const Task = require('../models/Task');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
+const cookieParser = require('cookie-parser');
+
+// Use cookie-parser middleware for cookie handling
+router.use(cookieParser());
 
 // Middleware to check authentication
 const protect = (req, res, next) => {
@@ -23,6 +27,7 @@ router.get('/', protect, async (req, res) => {
         const tasks = await Task.find({ userId: req.user.id });
         res.json(tasks);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -36,19 +41,26 @@ router.post('/', protect, async (req, res) => {
         return res.status(400).json({ message: 'All fields are required' });
     }
 
+    // Validate deadline (Make sure it's a valid date)
+    const deadlineDate = new Date(deadline);
+    if (isNaN(deadlineDate)) {
+        return res.status(400).json({ message: 'Invalid deadline format' });
+    }
+
     try {
         const newTask = new Task({
             title,
             description,
             category,
             priority,
-            dueDate: new Date(deadline), // Convert deadline to Date object
+            dueDate: deadlineDate, // Convert deadline to Date object
             userId: req.user.id
         });
 
         await newTask.save();
         res.status(201).json(newTask);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
 });

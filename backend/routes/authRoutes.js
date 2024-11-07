@@ -5,7 +5,7 @@ const User = require('../models/User');
 const router = express.Router();
 
 // Sign-up
-router.post('/signup', async (req, res) => {
+router.post('/api/signup', async (req, res) => {  // Corrected path
     const { username, email, password } = req.body;
 
     try {
@@ -35,7 +35,7 @@ router.post('/signup', async (req, res) => {
 });
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/api/login', async (req, res) => {  // Corrected path
     const { email, password } = req.body;
 
     try {
