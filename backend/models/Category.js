@@ -1,28 +1,31 @@
+// Category model example (if you haven't already defined it)
 const mongoose = require('mongoose');
 
-// Define the schema for the Category model
-const categorySchema = new mongoose.Schema(
-  {
+const categorySchema = new mongoose.Schema({
     name: {
-      type: String,
-      required: true,  // Name is required
-      unique: true,    // Category name should be unique
-      minlength: 3,    // Minimum length for name
-      maxlength: 100   // Maximum length for name
+        type: String,
+        required: true,
+        unique: true,
     },
-    description: {
-      type: String,
-      required: true,  // Description is required
-      minlength: 5,    // Minimum length for description
-      maxlength: 255   // Maximum length for description
-    }
-  },
-  {
-    timestamps: true // Automatically add createdAt and updatedAt fields
-  }
-);
+});
 
-// Create the Category model
 const Category = mongoose.model('Category', categorySchema);
-
 module.exports = Category;
+
+// Fetch categories route
+const express = require('express');
+const router = express.Router();
+const Category = require('../models/Category');
+
+// Route to get all categories
+router.get('/categories', async (req, res) => {
+    try {
+        const categories = await Category.find();
+        res.json(categories);
+    } catch (err) {
+        console.error('Error fetching categories:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+module.exports = router;

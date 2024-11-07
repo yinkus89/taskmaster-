@@ -64,5 +64,67 @@ router.post('/', protect, async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+router.delete('/:id', protect, async (req, res) => {
+    try {
+        const task = await Task.findById(req.params.id);
+
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        // Ensure that the task belongs to the authenticated user
+        if (task.userId.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized to delete this task' });
+        }
+
+        await task.remove();
+        res.status(200).json({ message: 'Task deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.put('/:id', protect, async (req, res) => {
+    const { title, description, category, priority, deadline } = req.body;
+
+    // Input validation
+    if (!title || !description || !category || !priority || !deadline) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Validate deadline
+    const deadlineDate = new Date(deadline);
+    if (isNaN(deadlineDate)) {
+        return res.status(400).json({ message: 'Invalid deadline format' });
+    }
+
+    try {
+        const task = await Task.findById(req.params.id);
+
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        // Ensure the task belongs to the authenticated user
+        if (task.userId.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized to update this task' });
+        }
+
+        // Update task fields
+        task.title = title;
+        task.description = description;
+        task.category = category;
+        task.priority = priority;
+        task.dueDate = deadlineDate;
+
+        await task.save();
+        res.status(200).json(task);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 
 module.exports = router;
