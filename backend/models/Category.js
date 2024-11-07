@@ -1,5 +1,3 @@
-// models/Category.js
-
 const mongoose = require('mongoose');
 
 // Define the schema for the Category model
@@ -17,14 +15,6 @@ const categorySchema = new mongoose.Schema(
       required: true,  // Description is required
       minlength: 5,    // Minimum length for description
       maxlength: 255   // Maximum length for description
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now  // Automatically set the creation date
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now  // Automatically set the update date
     }
   },
   {

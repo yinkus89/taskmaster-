@@ -31,13 +31,18 @@ router.get('/', protect, async (req, res) => {
 router.post('/', protect, async (req, res) => {
     const { title, description, category, priority, deadline } = req.body;
 
+    // Input validation
+    if (!title || !description || !category || !priority || !deadline) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
     try {
         const newTask = new Task({
             title,
             description,
             category,
             priority,
-            deadline,
+            dueDate: new Date(deadline), // Convert deadline to Date object
             userId: req.user.id
         });
 
