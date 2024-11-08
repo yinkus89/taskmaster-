@@ -7,7 +7,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import TaskListPage from './component/TaskListPage';
 import TaskFormPage from './pages/TaskFormPage';
-
+import TaskPage from './pages/TaskPage';  // Import the new TaskPage
 
 function App() {
     return (
@@ -20,6 +20,7 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/tasks/new" element={<TaskFormPage />} />
+                    <Route path="/tasks/:taskId" element={<TaskPage />} /> {/* New TaskPage route */}
                 </Routes>
             </div>
             <Footer />
