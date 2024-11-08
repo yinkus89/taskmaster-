@@ -2,10 +2,16 @@ const express = require("express");
 const User = require("../models/User");
 const protect = require("../middleware/protect"); // Import your middleware to protect routes
 const router = express.Router();
+const mongoose = require("mongoose");
 
 // Route to get a user by ID (protected route)
 router.get("/:id", protect, async (req, res) => {
   const { id } = req.params; // Get user ID from URL parameters
+
+  // Validate if the provided ID is a valid MongoDB ObjectId
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid user ID format" });
+  }
 
   try {
     // Check if the ID in the request matches the authenticated user's ID (if you want to restrict access)
@@ -27,7 +33,7 @@ router.get("/:id", protect, async (req, res) => {
     res.json(userData); // Send user data, excluding sensitive information
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 

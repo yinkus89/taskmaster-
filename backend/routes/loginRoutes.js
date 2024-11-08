@@ -21,13 +21,13 @@ router.post('/login', async (req, res) => {
         // Check if the user exists
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(401).json({ message: 'Invalid email or password' });
+            return res.status(400).json({ message: 'Invalid email or password' });
         }
 
         // Compare the entered password with the stored hash
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid email or password' });
+            return res.status(400).json({ message: 'Invalid email or password' });
         }
 
         // Generate JWT token
@@ -37,11 +37,17 @@ router.post('/login', async (req, res) => {
             { expiresIn: '1h' } // Token expiration time (1 hour)
         );
 
-        // Optionally, send the JWT token as a cookie (with HttpOnly flag)
-        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+        // Send JWT token as a cookie (with HttpOnly flag for security)
+        res.cookie('token', token, {
+            httpOnly: true, // Cannot be accessed by client-side JS
+            secure: process.env.NODE_ENV === 'production', // Only secure in production
+            sameSite: 'Strict', // Prevents CSRF
+            maxAge: 3600000, // 1 hour expiry (matches JWT expiry)
+        });
 
-        // Or send it in the response body
-        res.json({ message: 'Login successful', token });
+        // Optionally, send a success message as a response body (if not using cookies for frontend)
+        res.json({ message: 'Login successful' });
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
