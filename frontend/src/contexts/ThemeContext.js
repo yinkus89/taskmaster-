@@ -1,39 +1,33 @@
-// src/context/ThemeContext.js
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { createContext, useState } from 'react';
 
-const ThemeContext = createContext();
+// Create the context
+export const ThemeContext = createContext();
 
-export const ThemeProvider = ({ children }) => {
-  const location = useLocation();
-  const [backgroundColor, setBackgroundColor] = useState('');
+// Create the provider
+const ThemeProvider = ({ children }) => {
+    const [theme, setTheme] = useState({
+        background: '#f4f4f4',
+        color: '#333',
+        navBackground: '#333',
+        navColor: '#fff',
+        linkColor: '#1e90ff',
+    });
 
-  useEffect(() => {
-    switch (location.pathname) {
-      case '/login':
-      case '/signup':
-        setBackgroundColor('');
-        break;
-      case '/':
-        setBackgroundColor('skyblue');
-        break;
-      case '/tasks/new':
-        setBackgroundColor('grey');
-        break;
-      default:
-        setBackgroundColor('white');
-    }
-  }, [location.pathname]);
+    const toggleTheme = () => {
+        setTheme(prevTheme => ({
+            ...prevTheme,
+            background: prevTheme.background === '#f4f4f4' ? '#333' : '#f4f4f4',
+            color: prevTheme.color === '#333' ? '#f4f4f4' : '#333',
+            navBackground: prevTheme.navBackground === '#333' ? '#fff' : '#333',
+            navColor: prevTheme.navColor === '#fff' ? '#333' : '#fff',
+        }));
+    };
 
-  return (
-    <ThemeContext.Provider value={{ backgroundColor }}>
-      <div style={{ backgroundColor, minHeight: '100vh', padding: '20px' }}>
-        {children}
-      </div>
-    </ThemeContext.Provider>
-  );
+    return (
+        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+            {children}
+        </ThemeContext.Provider>
+    );
 };
 
-export const useTheme = () => {
-  return useContext(ThemeContext);
-};
+export default ThemeProvider; // Export ThemeProvider as default

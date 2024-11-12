@@ -1,6 +1,25 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+// Loading Spinner Component
+const LoadingSpinner = () => (
+    <div className="spinner">
+        <span>Loading...</span>
+    </div>
+);
+
+// Category Select Component
+const CategorySelect = ({ categories, selectedCategory, onCategoryChange }) => (
+    <select name="category" value={selectedCategory} onChange={onCategoryChange} required>
+        <option value="" disabled>Select Category</option>
+        {categories.map((category) => (
+            <option key={category._id} value={category._id} title={category.description}>
+                {category.name}
+            </option>
+        ))}
+    </select>
+);
+
 const TaskFormPage = () => {
     const [task, setTask] = useState({
         title: '',
@@ -10,10 +29,10 @@ const TaskFormPage = () => {
         category: '', // Store category ID
         priority: '', // Store priority level
     });
-
     const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    // Hardcoded category list (replace with dynamic data if needed)
     const categoriesList = [
         { _id: "work", name: "Work", description: "Work-related tasks", priorityLevel: 1 },
         { _id: "personal", name: "Personal", description: "Personal tasks", priorityLevel: 2 },
@@ -38,8 +57,14 @@ const TaskFormPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+        setSuccess(null);
 
-        // Ensure the priority is an integer (it should be between 1 and 4)
+        // Validate required fields
+        if (!task.title || !task.description || !task.deadline || !task.category || !task.priority) {
+            return setError('All fields must be filled out.');
+        }
+
+        // Ensure priority is an integer between 1 and 4
         const priorityNumber = parseInt(task.priority);
         if (isNaN(priorityNumber) || priorityNumber < 1 || priorityNumber > 4) {
             return setError('Priority must be a number between 1 and 4.');
@@ -48,18 +73,21 @@ const TaskFormPage = () => {
         const taskData = {
             title: task.title,
             description: task.description,
-            category: task.category, // Sending the category ID
-            priority: priorityNumber, // Sending numeric priority
-            deadline: new Date(task.deadline).toISOString(), // Ensure deadline is in ISO format
+            category: task.category,
+            priority: priorityNumber,
+            deadline: new Date(task.deadline).toISOString(),
         };
+
+        setLoading(true);
 
         try {
             const response = await axios.post('http://localhost:5000/api/tasks', taskData, {
-                withCredentials: true, // Send cookies (like the token) with the request
+                withCredentials: true,
             });
             console.log('Task created:', response.data);
+            setSuccess('Task created successfully!');
 
-            // Reset the form after successful submission
+            // Reset form after successful submission
             setTask({
                 title: '',
                 description: '',
@@ -71,12 +99,18 @@ const TaskFormPage = () => {
         } catch (err) {
             console.error('Error creating task:', err);
             setError('Failed to create task. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <div>
             <h2>Create Task</h2>
+
+            {/* Success message */}
+            {success && <p style={{ color: 'green' }}>{success}</p>}
+
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"
@@ -101,24 +135,16 @@ const TaskFormPage = () => {
                     required
                 />
                 <select name="status" value={task.status} onChange={handleChange}>
-                    <option value="pending">Pending</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed</option>
+                    <option value="pending">Pending (Task is not started yet)</option>
+                    <option value="in-progress">In Progress (Task is being worked on)</option>
+                    <option value="completed">Completed (Task is finished)</option>
                 </select>
 
-                <select
-                    name="category"
-                    value={task.category}
-                    onChange={handleChange}
-                    required
-                >
-                    <option value="" disabled>Select Category</option>
-                    {categoriesList.map((category) => (
-                        <option key={category._id} value={category._id}>
-                            {category.name} - {category.description} (Priority {category.priorityLevel})
-                        </option>
-                    ))}
-                </select>
+                <CategorySelect 
+                    categories={categoriesList} 
+                    selectedCategory={task.category} 
+                    onCategoryChange={handleChange} 
+                />
 
                 <input
                     type="number"
@@ -130,9 +156,13 @@ const TaskFormPage = () => {
                     min="1"
                     max="4"
                 />
-                <button type="submit">Create Task</button>
+
+                <button type="submit" disabled={loading}>
+                    {loading ? <LoadingSpinner /> : 'Create Task'}
+                </button>
             </form>
 
+            {/* Error message */}
             {error && <p style={{ color: 'red' }}>{error}</p>}
         </div>
     );

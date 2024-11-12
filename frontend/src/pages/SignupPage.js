@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../api';  // Importing the configured API instance
+import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../api"; // Importing the configured API instance
+import { ThemeContext } from "../contexts/ThemeContext"; // Import ThemeContext
 
 function SignupPage() {
+    const { theme } = useContext(ThemeContext); // Access theme from context
     const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -32,10 +34,10 @@ function SignupPage() {
     };
 
     return (
-        <div>
+        <div style={{ backgroundColor: theme.background, color: theme.color, padding: '20px', borderRadius: '5px' }}>
             <h1>Sign Up</h1>
             {error && <p style={{ color: 'red' }}>{error}</p>}
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} style={{ maxWidth: '400px', margin: '0 auto' }}>
                 <div>
                     <label>Email</label>
                     <input 
@@ -43,6 +45,7 @@ function SignupPage() {
                         value={email} 
                         onChange={(e) => setEmail(e.target.value)} 
                         required
+                        style={{ padding: '10px', margin: '10px 0', width: '100%' }}
                     />
                 </div>
                 <div>
@@ -52,6 +55,7 @@ function SignupPage() {
                         value={username} 
                         onChange={(e) => setUsername(e.target.value)} 
                         required
+                        style={{ padding: '10px', margin: '10px 0', width: '100%' }}
                     />
                 </div>
                 <div>
@@ -61,9 +65,21 @@ function SignupPage() {
                         value={password} 
                         onChange={(e) => setPassword(e.target.value)} 
                         required
+                        style={{ padding: '10px', margin: '10px 0', width: '100%' }}
                     />
                 </div>
-                <button type="submit" disabled={loading}>
+                <button 
+                    type="submit" 
+                    disabled={loading}
+                    style={{
+                        padding: '10px',
+                        backgroundColor: theme.linkColor,
+                        color: theme.navColor,
+                        width: '100%',
+                        border: 'none',
+                        cursor: 'pointer',
+                    }}
+                >
                     {loading ? 'Signing Up...' : 'Sign Up'}
                 </button>
             </form>

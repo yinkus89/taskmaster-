@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api'; // Import the api instance
 
 const TaskPage = () => {
     const [tasks, setTasks] = useState([]);
@@ -12,17 +12,19 @@ const TaskPage = () => {
     });
     const [categories, setCategories] = useState([]);
     const [error, setError] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);  // Task creation loading state
+    const [isDeleting, setIsDeleting] = useState(false);  // Task deletion loading state
 
     // Fetch categories from the backend
     useEffect(() => {
-        axios.get('http://localhost:5000/api/categories', { withCredentials: true })
+        api.get('/categories') // Use the api instance
             .then(response => setCategories(response.data))
             .catch(err => console.error('Error fetching categories:', err));
     }, []);
 
     // Fetch tasks for the logged-in user
     useEffect(() => {
-        axios.get('http://localhost:5000/api/tasks', { withCredentials: true })
+        api.get('/tasks') // Use the api instance
             .then(response => setTasks(response.data))
             .catch(err => console.error('Error fetching tasks:', err));
     }, []);
@@ -35,28 +37,45 @@ const TaskPage = () => {
     const handleCreateTask = async (e) => {
         e.preventDefault();
         setError(null);
+        setIsLoading(true); // Set loading state to true
 
+        // Category validation
+        if (!categories.find(cat => cat.name === newTask.category)) {
+            setError('Please select a valid category.');
+            setIsLoading(false); // Reset loading state
+            return;
+        }
+
+        // Field validation
         if (!newTask.title || !newTask.description || !newTask.deadline || !newTask.category) {
             setError('Please fill in all required fields.');
+            setIsLoading(false); // Reset loading state
             return;
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/api/tasks', newTask, { withCredentials: true });
+            const response = await api.post('/tasks', newTask); // Use the api instance
             setTasks(prevTasks => [...prevTasks, response.data]);
             setNewTask({ title: '', description: '', deadline: '', priority: 1, category: '' });
         } catch (err) {
             setError('Failed to create task. Please try again.');
             console.error('Error creating task:', err);
+        } finally {
+            setIsLoading(false); // Reset loading state
         }
     };
 
     const handleDeleteTask = async (taskId) => {
-        try {
-            await axios.delete(`http://localhost:5000/api/tasks/${taskId}`, { withCredentials: true });
-            setTasks(tasks.filter(task => task._id !== taskId));
-        } catch (err) {
-            console.error('Error deleting task:', err);
+        if (window.confirm('Are you sure you want to delete this task?')) {  // Confirmation dialog
+            setIsDeleting(true); // Set deleting state to true
+            try {
+                await api.delete(`/tasks/${taskId}`); // Use the api instance
+                setTasks(tasks.filter(task => task._id !== taskId));
+            } catch (err) {
+                console.error('Error deleting task:', err);
+            } finally {
+                setIsDeleting(false); // Reset deleting state
+            }
         }
     };
 
@@ -126,7 +145,9 @@ const TaskPage = () => {
                         required
                     />
                 </label>
-                <button type="submit">Create Task</button>
+                <button type="submit" disabled={isLoading}>
+                    {isLoading ? 'Creating Task...' : 'Create Task'}
+                </button>
             </form>
 
             {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -140,7 +161,12 @@ const TaskPage = () => {
                         <p>Category: {task.category}</p>
                         <p>Priority: {task.priority}</p>
                         <p>Deadline: {new Date(task.dueDate).toLocaleDateString()}</p>
-                        <button onClick={() => handleDeleteTask(task._id)}>Delete</button>
+                        <button 
+                            onClick={() => handleDeleteTask(task._id)} 
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? 'Deleting...' : 'Delete'}
+                        </button>
                     </li>
                 ))}
             </ul>
