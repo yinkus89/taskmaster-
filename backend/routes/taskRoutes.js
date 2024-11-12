@@ -1,82 +1,94 @@
 const express = require('express');
-const Task = require('../models/Task');
-const Category = require('../models/Category');
-const jwt = require('jsonwebtoken');
 const router = express.Router();
-const cookieParser = require('cookie-parser');
-const User = require('../models/User'); // Make sure the User model is imported
-
-// Use cookie-parser middleware for cookie handling
-router.use(cookieParser());
-
-// Middleware to check authentication
-const protect = async (req, res, next) => {
-    let token;
-    if (req.cookies.token) {
-        token = req.cookies.token; // Cookie with the token
-    }
-
-    if (!token) {
-        return res.status(401).json({ message: 'Not authorized, no token' });
-    }
-
-    try {
-        // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // Attach user to request
-        req.user = await User.findById(decoded.id).select('-password');
-        next();
-    } catch (err) {
-        res.status(401).json({ message: 'Not authorized, token failed' });
-    }
-};
+const Task = require('../models/Task');
+const protect = require('../middleware/authMiddleware'); // Assuming you have an auth middleware
 
 // Create a new task
 router.post('/', protect, async (req, res) => {
     const { title, description, category, priority, deadline } = req.body;
 
-    console.log('Received Task Data:', req.body);
-
-    // Input validation
-    if (!title || !description || !category || !priority || !deadline) {
-        return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    // Validate category: Ensure the category exists in the Category collection
-    const validCategory = await Category.findById(category);
-    if (!validCategory) {
-        return res.status(400).json({ message: 'Invalid category' });
-    }
-
-    // Validate priority (ensure it's a valid number between 1 and 4)
-    const validPriorities = [1, 2, 3, 4];
-    if (!validPriorities.includes(priority)) {
-        return res.status(400).json({ message: 'Invalid priority level' });
-    }
-
-    // Validate deadline (make sure the deadline is a valid date)
-    const deadlineDate = new Date(deadline);
-    if (isNaN(deadlineDate)) {
-        return res.status(400).json({ message: 'Invalid deadline format' });
-    }
-
     try {
         const newTask = new Task({
             title,
             description,
-            category, // The category ID
-            priority, // The numeric priority level
-            dueDate: deadlineDate, // Store the deadline as a Date object
-            userId: req.user.id, // Attach user ID from the decoded token
+            category,
+            priority,
+            dueDate: new Date(deadline),
+            userId: req.user.id, // Attach user ID from the token
         });
 
         const task = await newTask.save();
-        console.log('Task Created:', task); // Log task creation
-        res.status(201).json(task); // Return the created task
+        res.status(201).json(task);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error', error: err.message });
+        console.error("Error creating task:", err);
+        res.status(500).json({ message: 'Failed to create task', error: err.message });
+    }
+});
+
+// Get all tasks for the authenticated user
+router.get('/', protect, async (req, res) => {
+    try {
+        // Filter tasks by the logged-in user's ID
+        const tasks = await Task.find({ userId: req.user.id });
+        res.status(200).json(tasks);
+    } catch (err) {
+        console.error("Error retrieving tasks:", err);
+        res.status(500).json({ message: 'Failed to retrieve tasks', error: err.message });
+    }
+});
+
+// Get a single task by ID
+router.get('/:taskId', protect, async (req, res) => {
+    try {
+        const task = await Task.findById(req.params.taskId);
+        if (!task || task.userId.toString() !== req.user.id) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+        res.json(task);
+    } catch (err) {
+        console.error("Error retrieving task:", err);
+        res.status(500).json({ message: 'Failed to retrieve task', error: err.message });
+    }
+});
+
+// Update a task by ID
+router.put('/:taskId', protect, async (req, res) => {
+    const { title, description, category, priority, deadline } = req.body;
+
+    try {
+        const task = await Task.findById(req.params.taskId);
+        if (!task || task.userId.toString() !== req.user.id) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        // Update task fields if they are provided
+        task.title = title || task.title;
+        task.description = description || task.description;
+        task.category = category || task.category;
+        task.priority = priority || task.priority;
+        task.dueDate = deadline ? new Date(deadline) : task.dueDate;
+
+        const updatedTask = await task.save();
+        res.json(updatedTask);
+    } catch (err) {
+        console.error("Error updating task:", err);
+        res.status(500).json({ message: 'Failed to update task', error: err.message });
+    }
+});
+
+// Delete a task by ID
+router.delete('/:taskId', protect, async (req, res) => {
+    try {
+        const task = await Task.findById(req.params.taskId);
+        if (!task || task.userId.toString() !== req.user.id) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        await task.remove();
+        res.json({ message: 'Task deleted successfully' });
+    } catch (err) {
+        console.error("Error deleting task:", err);
+        res.status(500).json({ message: 'Failed to delete task', error: err.message });
     }
 });
 

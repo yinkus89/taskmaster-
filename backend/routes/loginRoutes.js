@@ -1,5 +1,6 @@
+// loginRoute.js
 const express = require('express');
-const User = require('../models/User');
+const User = require('../models/User'); // Ensure this path is correct
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
@@ -25,7 +26,7 @@ router.post('/login', async (req, res) => {
         }
 
         // Compare the entered password with the stored hash
-        const isMatch = await user.comparePassword(password);
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid email or password' });
         }
@@ -45,7 +46,7 @@ router.post('/login', async (req, res) => {
             maxAge: 3600000, // 1 hour expiry (matches JWT expiry)
         });
 
-        // Optionally, send a success message as a response body (if not using cookies for frontend)
+        // Send a success message as a response body
         res.json({ message: 'Login successful' });
 
     } catch (err) {

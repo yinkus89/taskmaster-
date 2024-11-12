@@ -9,12 +9,17 @@ const validateInput = (data) => {
   const { username, email, password } = data;
   const errors = [];
 
+  // Check username length
   if (!username || username.trim().length < 3) {
     errors.push("Username must be at least 3 characters long");
   }
+
+  // Check email format
   if (!email || !/\S+@\S+\.\S+/.test(email)) {
     errors.push("Invalid email format");
   }
+
+  // Check password strength
   if (!password || password.length < 6) {
     errors.push("Password must be at least 6 characters long");
   }
@@ -22,7 +27,7 @@ const validateInput = (data) => {
   return errors;
 };
 
-// Sign-up
+// Sign-up route
 router.post("/signup", async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -33,13 +38,13 @@ router.post("/signup", async (req, res) => {
   }
 
   try {
-    // Check if user already exists
+    // Check if user already exists with email
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    // Hash the password before saving
+    // Hash the password before saving the user
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = new User({
@@ -48,21 +53,22 @@ router.post("/signup", async (req, res) => {
       password: hashedPassword,
     });
 
+    // Save the user to the database
     await user.save();
 
-    // Create JWT token
+    // Generate JWT token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "1h", // Token expiration time
     });
 
     res.status(201).json({ token });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Error during sign-up:", err);
+    res.status(500).json({ message: "Server error, please try again later" });
   }
 });
 
-// Login
+// Login route
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -78,21 +84,21 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "User not found" });
     }
 
-    // Compare password using bcrypt
+    // Compare password with the stored hash
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Password doesn't match" });
     }
 
-    // Create JWT token
+    // Generate JWT token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "1h", // Token expiration time
     });
 
     res.json({ token });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Error during login:", err);
+    res.status(500).json({ message: "Server error, please try again later" });
   }
 });
 

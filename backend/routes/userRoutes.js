@@ -1,38 +1,27 @@
 const express = require("express");
 const User = require("../models/User");
-const protect = require("../middleware/protect"); // Import your middleware to protect routes
+const protect = require("../middleware/authMiddleware"); // Import your middleware to protect routes
 const router = express.Router();
-const mongoose = require("mongoose");
 
-// Route to get a user by ID (protected route)
-router.get("/:id", protect, async (req, res) => {
-  const { id } = req.params; // Get user ID from URL parameters
-
-  // Validate if the provided ID is a valid MongoDB ObjectId
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid user ID format" });
-  }
-
+// Route to get the authenticated user's profile (protected route)
+router.get("/profile", protect, async (req, res) => {
   try {
-    // Check if the ID in the request matches the authenticated user's ID (if you want to restrict access)
-    if (req.user.id !== id) {
-      return res
-        .status(403)
-        .json({ message: "Forbidden: You can only view your own profile" });
-    }
-
-    // Find the user by ID
-    const user = await User.findById(id);
+    // Find the user by the authenticated user's ID in req.user (set by the protect middleware)
+    const user = await User.findById(req.user._id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Return the user data (excluding password)
-    const { password, ...userData } = user.toObject();
-    res.json(userData); // Send user data, excluding sensitive information
+    // Exclude sensitive information like password
+    const { password, salt, ...userData } = user.toObject(); // Consider other sensitive fields like salt
+
+    res.json({
+      message: "Profile retrieved successfully",
+      profile: userData, // Send user data, excluding sensitive information
+    });
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching user profile:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });

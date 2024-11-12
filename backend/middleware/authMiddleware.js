@@ -1,26 +1,23 @@
-// taskRoutes.js
 const express = require("express");
-const protect = require("./authMiddleware"); // Adjust path if necessary
+const protect = require("./authMiddleware"); // Assuming your file is located in middleware/authMiddleware.js
 const Task = require("../models/Task");
 
 const router = express.Router();
 
-// POST /tasks - Create a new task (Protected Route)
+// Example of a protected route
 router.post("/tasks", protect, async (req, res) => {
   try {
     const { title, description, deadline, category, priority } = req.body;
 
-    // Create a new Task document
     const newTask = new Task({
       title,
       description,
       deadline,
       category,
       priority,
-      user: req.user.id, // Attach user ID from the token payload (req.user)
+      user: req.user._id, // Attach user ID from the token
     });
 
-    // Save the new task in the database
     await newTask.save();
     res.status(201).json(newTask);
   } catch (err) {
