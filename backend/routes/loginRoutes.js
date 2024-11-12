@@ -5,9 +5,22 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 
 // Use cookie-parser middleware for cookie handling
 router.use(cookieParser());
+
+
+// Define rate limiter specifically for login attempts
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 requests per 15 minutes
+    message: "Too many login attempts, please try again after 15 minutes",
+});
+
+router.post('/login', loginLimiter, async (req, res) => {
+    // Login logic here
+});
 
 // Login route
 router.post('/login', async (req, res) => {

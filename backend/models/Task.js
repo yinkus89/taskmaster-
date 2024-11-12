@@ -1,32 +1,18 @@
-// taskRoutes.js
-const express = require("express");
-const protect = require("./authMiddleware"); // Adjust path if necessary
-const Task = require("../models/Task");
+const mongoose = require("mongoose");
 
-const router = express.Router();
-
-// POST /tasks - Create a new task (Protected Route)
-router.post("/tasks", protect, async (req, res) => {
-  try {
-    const { title, description, deadline, category, priority } = req.body;
-
-    // Create a new Task document
-    const newTask = new Task({
-      title,
-      description,
-      deadline,
-      category,
-      priority,
-      user: req.user.id, // Attach user ID from the token payload (req.user)
-    });
-
-    // Save the new task in the database
-    await newTask.save();
-    res.status(201).json(newTask);
-  } catch (err) {
-    console.error("Error creating task:", err);
-    res.status(500).json({ message: "Server error" });
+const taskSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    category: { type: String, required: true },  // Assuming it's a string; adjust if you have a separate Category model
+    priority: { type: String, required: true, enum: ['low', 'medium', 'high'] },  // Assuming priority can only be low, medium, high
+    deadline: { type: Date },
+    dueDate: { type: Date },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  },
+  {
+    timestamps: true,  // Automatically adds createdAt and updatedAt fields
   }
-});
+);
 
-module.exports = router;
+module.exports = mongoose.model("Task", taskSchema);

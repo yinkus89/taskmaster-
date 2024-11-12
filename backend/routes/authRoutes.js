@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { userValidationRules } = require("../middlewares/validator");
 const router = express.Router();
 
 // Helper function for input validation
@@ -28,7 +29,7 @@ const validateInput = (data) => {
 };
 
 // Sign-up route
-router.post("/signup", async (req, res) => {
+router.post("/signup", userValidationRules, User.validate, async (req, res) => {
   const { username, email, password } = req.body;
 
   // Validate input

@@ -9,9 +9,12 @@ const rateLimit = require("express-rate-limit");
 const authRoutes = require("./routes/authRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const userRoutes = require("./routes/userRoutes");
-const categoryRoutes = require('./routes/categoryRoutes');
+const categoryRoutes = require("./routes/categoryRoutes");
+const errorHandler = require("./middlewares/errorHandler");
 
 dotenv.config();
+
+const app = express(); // Initialize the app here
 
 // MongoDB connection setup
 mongoose
@@ -25,7 +28,6 @@ mongoose
     process.exit(1);
   });
 
-const app = express();
 app.use(morgan("dev")); // Logging middleware
 app.use(helmet()); // Secure HTTP headers
 app.use(cookieParser()); // Cookie parsing middleware
@@ -51,30 +53,21 @@ app.use(express.json()); // Parse JSON bodies
 app.use("/api/users", userRoutes); // User routes
 app.use("/api/auth", authRoutes); // Auth routes
 app.use("/api/tasks", taskRoutes); // Task routes
-app.use('/api/categories', categoryRoutes); // Category routes
+app.use("/api/categories", categoryRoutes); // Category routes
 
-// Global error handler
-app.use((err, req, res, next) => {
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({ message: err.message });
-  }
-  if (err.name === 'CastError') {
-    return res.status(400).json({ message: 'Invalid ID format' });
-  }
-  console.error(err);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
+// Global error handler - make sure this is after all route handlers
+app.use(errorHandler);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log("SIGTERM received, shutting down gracefully...");
-  app.close(() => {
+  server.close(() => {
     console.log("Process terminated");
   });
 });
 
 // Start the server
 const port = process.env.PORT || 5000;
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
