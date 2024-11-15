@@ -45,9 +45,9 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 500, // Maximum 100 requests per 15 minutes
 });
-app.use(limiter);
+// app.use(limiter);
 
-app.use(express.json());
+// app.use(express.json());
 
 // Define routes
 app.use("/api/users", userRoutes);
@@ -72,4 +72,4 @@ const server = app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
 
-module.exports = server;  // Export server for testing purposes if needed
+module.exports = server; // Export server for testing purposes if needed

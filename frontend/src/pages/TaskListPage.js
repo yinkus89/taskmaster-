@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 
-
 function TaskListPage() {
   const { userId } = useParams();
   const [tasks, setTasks] = useState([]);
@@ -33,7 +32,7 @@ function TaskListPage() {
     };
 
     fetchTasks();
-  }, [userId, tasks]);
+  }, [userId]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -43,12 +42,10 @@ function TaskListPage() {
           { withCredentials: true }
         );
         setCategories(categoryResponse.data);
-      } catch  {}
-        
-      
-    }; 
+      } catch {}
+    };
     fetchCategories();
-  }, [userId, categories]);
+  }, [userId]);
 
   // Get category name from category ID
   const getCategoryName = (categoryId) => {

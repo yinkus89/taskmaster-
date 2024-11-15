@@ -26,7 +26,7 @@ function App() {
           {/* Route for individual task details */}
           <Route path="/about" element={<AboutUsPage />} />{" "}
           {/* About Us route */}
-          <Route path="/:userId/tasks" element={<TaskListPage />} />{" "}
+          <Route path="/tasks" element={<TaskListPage />} />{" "}
           {/* Task List route */}
         </Routes>
       </div>
