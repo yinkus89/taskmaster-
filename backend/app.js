@@ -14,7 +14,7 @@ const errorHandler = require("./middlewares/errorHandler");
 
 dotenv.config();
 
-const app = express(); // Initialize the app here
+const app = express();
 
 // MongoDB connection setup
 mongoose
@@ -28,38 +28,38 @@ mongoose
     process.exit(1);
   });
 
-app.use(morgan("dev")); // Logging middleware
-app.use(helmet()); // Secure HTTP headers
-app.use(cookieParser()); // Cookie parsing middleware
+app.use(morgan("dev"));
+app.use(helmet());
+app.use(cookieParser());
 
-// Enable CORS for your frontend
+// Enable CORS for frontend
 const corsOptions = {
-  origin: 'http://localhost:3000', // Your frontend URL
-  methods: 'GET,POST,PUT,DELETE',
-  credentials: true, // Allow sending cookies (JWT token)
+  origin: `http://${process.env.CLIENT_ORIGIN}`,
+  methods: "GET,POST,PUT,DELETE",
+  credentials: true,
 };
 app.use(cors(corsOptions));
 
 // Rate limiter to prevent abuse
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 500, // Maximum 100 requests per 15 minutes
 });
-app.use(limiter); // Apply rate limiter
+app.use(limiter);
 
-app.use(express.json()); // Parse JSON bodies
+app.use(express.json());
 
 // Define routes
-app.use("/api/users", userRoutes); // User routes
-app.use("/api/auth", authRoutes); // Auth routes
-app.use("/api/tasks", taskRoutes); // Task routes
-app.use("/api/categories", categoryRoutes); // Category routes
+app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/tasks", taskRoutes);
+app.use("/api/categories", categoryRoutes);
 
-// Global error handler - make sure this is after all route handlers
+// Global error handler middleware
 app.use(errorHandler);
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
+// Graceful shutdown on SIGTERM signal
+process.on("SIGTERM", () => {
   console.log("SIGTERM received, shutting down gracefully...");
   server.close(() => {
     console.log("Process terminated");
@@ -71,3 +71,5 @@ const port = process.env.PORT || 5000;
 const server = app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
+module.exports = server;  // Export server for testing purposes if needed

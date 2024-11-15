@@ -1,105 +1,84 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const { userValidationRules } = require("../middlewares/validator");
+const User = require("../models/User"); // Your User model
 const router = express.Router();
 
-// Helper function for input validation
+// Define the validateInput function
 const validateInput = (data) => {
-  const { username, email, password } = data;
+  const { email, password, username } = data;
   const errors = [];
 
-  // Check username length
   if (!username || username.trim().length < 3) {
     errors.push("Username must be at least 3 characters long");
   }
-
-  // Check email format
   if (!email || !/\S+@\S+\.\S+/.test(email)) {
     errors.push("Invalid email format");
   }
-
-  // Check password strength
-  if (!password || password.length < 6) {
-    errors.push("Password must be at least 6 characters long");
+  if (!password || password.length < 8) {
+    errors.push("Password must be at least 8 characters long");
   }
 
   return errors;
 };
 
-// Sign-up route
-router.post("/signup", userValidationRules, User.validate, async (req, res) => {
-  const { username, email, password } = req.body;
+ 
 
-  // Validate input
-  const validationErrors = validateInput(req.body);
-  if (validationErrors.length > 0) {
-    return res.status(400).json({ message: validationErrors.join(", ") });
-  }
-
+router.post('/signup', async (req, res) => {
   try {
-    // Check if user already exists with email
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: "Email already exists" });
+    const { name, email, password } = req.body; // Destructure name from the request body
+
+    if (!name || !email || !password) { // Validate that all required fields are present
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Hash the password before saving the user
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      username,
-      email,
-      password: hashedPassword,
-    });
-
-    // Save the user to the database
+    // Proceed to create and save the user
+    const user = new User({ name, email, password });
     await user.save();
 
-    // Generate JWT token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h", // Token expiration time
-    });
-
-    res.status(201).json({ token });
-  } catch (err) {
-    console.error("Error during sign-up:", err);
-    res.status(500).json({ message: "Server error, please try again later" });
+    res.status(201).json({ message: "User created successfully" });
+  } catch (error) {
+    console.error("Error creating user:", error);
+    res.status(500).json({ message: "User creation failed" });
   }
 });
+
 
 // Login route
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  // Validate input
+  // Check if email or password is missing
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
 
   try {
-    // Find user by email
+    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Compare password with the stored hash
+    // Check if password is correct
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Password doesn't match" });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
     // Generate JWT token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h", // Token expiration time
-    });
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" } // Token expires in 1 hour
+    );
 
-    res.json({ token });
+    // Send the token as a response
+    res.status(200).json({ token });
+
   } catch (err) {
     console.error("Error during login:", err);
-    res.status(500).json({ message: "Server error, please try again later" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 

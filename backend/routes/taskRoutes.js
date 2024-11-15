@@ -1,83 +1,39 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Task = require('../models/Task');
-const isAuthenticated = require('../middlewares/authMiddleware'); // Import the auth middleware
-const ownershipMiddleware = require('../middlewares/ownershipMiddleware');
+const Task = require("../models/Task");
+const isAuthenticated = require("../middlewares/authMiddleware");
+const ownershipMiddleware = require("../middlewares/ownershipMiddleware");
+const { getTasks } = require("../controllers/taskController");
 
-// Create a new task - Requires authentication
-router.post('/', isAuthenticated, async (req, res) => {
+// Create a new task
+router.post("/", isAuthenticated, async (req, res) => {
   try {
-    const { name, description } = req.body;
-    if (!name || !description) {
-      return res.status(400).json({ message: 'Name and description are required' });
+    const { title, description, category, priority, deadline } = req.body;
+
+    // Validate required fields
+    if (!title || !description || !category || !priority || !deadline) {
+      return res.status(400).json({ success: false, message: "All fields must be filled out." });
     }
 
-    const task = new Task({
-      name,
+    // Create a new task with the userId from the authenticated user
+    const newTask = new Task({
+      title,
       description,
-      user: req.user.id, // Associate task with the authenticated user
+      category,
+      priority,
+      deadline,
+      userId: req.user.id, // Attach the authenticated user's ID to the task
     });
 
-    await task.save();
-    res.status(201).json(task);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    await newTask.save();
+    res.status(201).json({ success: true, task: newTask });
+  } catch (error) {
+    console.error("Error creating task:", error);
+    res.status(500).json({ success: false, message: "Error creating task." });
   }
 });
 
-// Retrieve all tasks for the authenticated user
-router.get('/', isAuthenticated, async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-
-    try {
-        const tasks = await Task.find({ user: req.user.id })
-            .limit(limit)
-            .skip((page - 1) * limit);
-
-        const count = await Task.countDocuments({ user: req.user.id });
-
-        res.status(200).json({
-            tasks,
-            totalPages: Math.ceil(count / limit),
-            currentPage: page,
-        });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
-// Update a task - Requires authentication
-router.put('/:id', ownershipMiddleware, async (req, res) => {
-  try {
-    const task = await Task.findOne({ _id: req.params.id, user: req.user.id }); // Ensure task belongs to authenticated user
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
-
-    const { name, description } = req.body;
-    task.name = name || task.name;
-    task.description = description || task.description;
-
-    await task.save();
-    res.status(200).json(task);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Delete a task - Requires authentication
-router.delete('/:id', isAuthenticated, async (req, res) => {
-  try {
-    const task = await Task.findOneAndDelete({ _id: req.params.id, user: req.user.id }); // Ensure task belongs to authenticated user
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
-
-    res.status(200).json({ message: 'Task deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+// Correct the route to /api/tasks and use the controller method
+router.get("/", isAuthenticated, getTasks); // Changed /tasks to /
 
 module.exports = router;

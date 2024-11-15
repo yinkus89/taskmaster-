@@ -1,90 +1,69 @@
-import React, { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../api"; // Importing the configured API instance
-import { ThemeContext } from "../contexts/ThemeContext"; // Import ThemeContext
+// SignupPage.js
+import React, { useState } from "react";
+import axios from "axios";
 
-function SignupPage() {
-    const { theme } = useContext(ThemeContext); // Access theme from context
-    const [email, setEmail] = useState('');
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
+const SignupPage = () => {
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post("http://localhost:5000/api/auth/signup", {
+        username,
+        email,
+        password,
+      });
+      setMessage("Signup successful!");
+      console.log("User signed up:", response.data);
+    } catch (error) {
+      console.error("Error signing up user:", error);
+      if (error.response) {
+        setMessage(error.response.data.message || "Signup failed due to validation error");
+      } else {
+        setMessage("Network error or server unavailable");
+      }
+    }
+  };
 
-        if (!email || !username || !password) {
-            setError('All fields are required');
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-            const response = await api.post('/auth/signup', { email, username, password });
-            localStorage.setItem('token', response.data.token);
-            navigate('/'); // Redirect to tasks page
-        } catch (err) {
-            setError(err.response?.data?.message || 'Something went wrong');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div style={{ backgroundColor: theme.background, color: theme.color, padding: '20px', borderRadius: '5px' }}>
-            <h1>Sign Up</h1>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            <form onSubmit={handleSubmit} style={{ maxWidth: '400px', margin: '0 auto' }}>
-                <div>
-                    <label>Email</label>
-                    <input 
-                        type="email" 
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)} 
-                        required
-                        style={{ padding: '10px', margin: '10px 0', width: '100%' }}
-                    />
-                </div>
-                <div>
-                    <label>Username</label>
-                    <input 
-                        type="text" 
-                        value={username} 
-                        onChange={(e) => setUsername(e.target.value)} 
-                        required
-                        style={{ padding: '10px', margin: '10px 0', width: '100%' }}
-                    />
-                </div>
-                <div>
-                    <label>Password</label>
-                    <input 
-                        type="password" 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        required
-                        style={{ padding: '10px', margin: '10px 0', width: '100%' }}
-                    />
-                </div>
-                <button 
-                    type="submit" 
-                    disabled={loading}
-                    style={{
-                        padding: '10px',
-                        backgroundColor: theme.linkColor,
-                        color: theme.navColor,
-                        width: '100%',
-                        border: 'none',
-                        cursor: 'pointer',
-                    }}
-                >
-                    {loading ? 'Signing Up...' : 'Sign Up'}
-                </button>
-            </form>
+  return (
+    <div>
+      <h2>Sign Up</h2>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Username</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
         </div>
-    );
-}
+        <div>
+          <label>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+        <button type="submit">Sign Up</button>
+      </form>
+      {message && <p>{message}</p>}
+    </div>
+  );
+};
 
 export default SignupPage;

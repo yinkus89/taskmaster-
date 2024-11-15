@@ -1,26 +1,35 @@
 const express = require('express');
+const express = require('express');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { body, validationResult } = require('express-validator'); // express-validator
 const router = express.Router();
 
-// Sign-up route
-router.post('/signup', async (req, res) => {
-    const { username, password } = req.body;
+// Input validation middleware using express-validator
+const userValidationRules = [
+    body('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters long'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+    body('email').isEmail().withMessage('Please provide a valid email address'), // Email validation
+];
 
-    // Input validation
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
+const validate = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
     }
-    if (password.length < 6) {
-        return res.status(400).json({ message: 'Password must be at least 6 characters long' });
-    }
+    next();
+};
 
+// Sign-up route with validation
+router.post('/signup', userValidationRules, validate, async (req, res) => {
+    const { username, email, password } = req.body;
+    res.status(201).json({ message: "User signed up successfully" });
     try {
-        // Check if the username already exists
-        const existingUser = await User.findOne({ username });
+        // Check if the username or email already exists
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
         if (existingUser) {
-            return res.status(400).json({ message: 'Username already exists' });
+            return res.status(400).json({ message: 'Username or email already exists' });
         }
 
         // Hash the password before saving it to the database
@@ -29,6 +38,7 @@ router.post('/signup', async (req, res) => {
         // Create a new user
         const newUser = new User({
             username,
+            email,
             password: hashedPassword,
         });
 
@@ -36,19 +46,19 @@ router.post('/signup', async (req, res) => {
 
         // Generate JWT token
         const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-            expiresIn: '30d', // Adjust token expiration as necessary
+            expiresIn: '30d', // Token expiration time
         });
 
         // Send the token as a cookie
         res.cookie('token', token, {
-            httpOnly: true, // Make it HTTP-only to prevent XSS attacks
-            secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+            httpOnly: true, // Secure cookie, not accessible via JS
+            secure: process.env.NODE_ENV === 'production', // Secure only in production
+            sameSite: 'Strict', // Added for CSRF protection
         });
 
-        // Send success message and optionally the token
+        // Send success message
         res.status(201).json({
             message: 'User created successfully',
-            // token: token, // Optionally send token in response body
         });
     } catch (err) {
         console.error(err);

@@ -1,61 +1,122 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../api"; // Assuming api.js is in the same directory
+import React, { useState, useContext } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; 
+import { ThemeContext } from '../contexts/ThemeContext'; 
 
 function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { theme, toggleTheme } = useContext(ThemeContext);
+    const navigate = useNavigate(); 
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
 
-    // Basic client-side validation
-    if (!email || !password) {
-      setError("Please enter both email and password");
-      return;
-    }
+        try {
+            const response = await axios.post(
+                'http://localhost:5000/api/auth/login', 
+                { email, password },
+                { withCredentials: true }
+            );
 
-    try {
-      const response = await api.post("/auth/login", { email, password });
-      localStorage.setItem("token", response.data.token); // Store token in local storage
-      navigate("/"); // Redirect to home page after successful login
-    } catch (err) {
-      // Handle error (e.g., invalid credentials)
-      setError(err.response?.data?.message || "Invalid credentials");
-      console.log(err.response?.data); // Log detailed error message
-    }
-  };
+            const userData = response.data;
 
-  return (
-    <div className="login-container">
-      <h1>Login</h1>
-      {error && <p className="error-message">{error}</p>} {/* Display error message */}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+            localStorage.setItem('token', userData.token); 
+            localStorage.setItem('user', JSON.stringify(userData));
+
+            // Redirect to the homepage after successful login
+            navigate('/');  // Update to redirect to the homepage
+        } catch (err) {
+            console.error(err);
+            if (err.response) {
+                setError(err.response.data.message || 'Something went wrong!');
+            } else {
+                setError('Network error. Please try again later.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div 
+            className="login-container" 
+            style={{ 
+                backgroundColor: theme.background, 
+                color: theme.color, 
+                padding: '20px', 
+                maxWidth: '400px', 
+                margin: 'auto', 
+                textAlign: 'center' 
+            }}
+        >
+            <h2 style={{ color: theme.headingColor }}>Login</h2>
+            {error && <div className="error" style={{ color: 'red' }}>{error}</div>}
+            <form onSubmit={handleLogin}>
+                <div>
+                    <label htmlFor="email" style={{ color: theme.color }}>Email:</label>
+                    <input
+                        type="email"
+                        id="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        style={{ 
+                            backgroundColor: theme.background, 
+                            color: theme.color, 
+                            border: `1px solid ${theme.color}`, 
+                            padding: '10px', 
+                            width: '100%' 
+                        }}
+                    />
+                </div>
+                <div>
+                    <label htmlFor="password" style={{ color: theme.color }}>Password:</label>
+                    <input
+                        type="password"
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        style={{ 
+                            backgroundColor: theme.background, 
+                            color: theme.color, 
+                            border: `1px solid ${theme.color}`, 
+                            padding: '10px', 
+                            width: '100%' 
+                        }}
+                    />
+                </div>
+                <button 
+                    type="submit" 
+                    disabled={loading} 
+                    style={{ 
+                        backgroundColor: theme.linkColor, 
+                        color: theme.color, 
+                        padding: '10px 20px', 
+                        cursor: 'pointer', 
+                        border: 'none' 
+                    }}
+                >
+                    {loading ? 'Logging in...' : 'Login'}
+                </button>
+            </form>
+            <button onClick={toggleTheme} style={{ 
+                backgroundColor: theme.linkColor, 
+                color: theme.color, 
+                padding: '10px', 
+                marginTop: '10px', 
+                border: 'none', 
+                cursor: 'pointer' 
+            }}>
+                Toggle Theme
+            </button>
         </div>
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Login</button>
-      </form>
-    </div>
-  );
+    );
 }
 
 export default LoginPage;
