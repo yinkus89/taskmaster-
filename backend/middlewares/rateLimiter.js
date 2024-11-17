@@ -1,10 +1,10 @@
-const rateLimit = require('express-rate-limit');
+const express = require("express");
+const loginLimiter = require("./middlewares/loginLimiter");
+const authController = require("./controllers/authController");
 
-// Rate limiter specifically for login attempts
-const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limit each IP to 5 requests per 15 minutes
-    message: "Too many login attempts, please try again after 15 minutes",
-});
+const router = express.Router();
 
-module.exports = loginLimiter;
+// Apply the rate limiter middleware to the login route
+router.post("/login", loginLimiter, authController.login);
+
+module.exports = router;

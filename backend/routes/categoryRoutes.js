@@ -1,23 +1,21 @@
-// routes/category.js
 const express = require('express');
 const Category = require('../models/Category');
 const router = express.Router();
+const { check, validationResult } = require('express-validator'); // To add validation for request body
 
 // Get all categories (with optional pagination)
 router.get('/', async (req, res) => {
     try {
-        // Optional pagination using query params (page, limit)
         const { page = 1, limit = 10 } = req.query;
-        
+
         // Fetch categories with pagination logic
         const categories = await Category.find()
             .skip((page - 1) * limit)  // Skip categories based on the page number
             .limit(parseInt(limit));   // Limit categories returned
-        
+
         // Get the total count for pagination info
         const totalCategories = await Category.countDocuments();
-        
-        // Send the response with pagination details
+
         res.json({
             categories,
             totalCategories,
@@ -30,42 +28,60 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Create a new category
-router.post('/', async (req, res) => {
-    const { name, description, priorityLevel } = req.body;
-
-    // Validate input
-    if (!name || !description || priorityLevel === undefined) {
-        return res.status(400).json({ message: 'All fields (name, description, priorityLevel) are required' });
-    }
-
-    // Validate priorityLevel (should be 1, 2, 3, or 4)
-    if (![1, 2, 3, 4].includes(priorityLevel)) {
-        return res.status(400).json({ message: 'Priority level must be 1, 2, 3, or 4' });
-    }
-
-    try {
-        // Check if the category already exists
-        const existingCategory = await Category.findOne({ name });
-        if (existingCategory) {
-            return res.status(400).json({ message: 'Category with this name already exists' });
+// Create a new category with validation
+router.post(
+    '/',
+    [
+        check('name', 'Category name is required').not().isEmpty(),
+        check('description', 'Description must be at least 10 characters long').isLength({ min: 10 }),
+        check('priorityLevel', 'Priority level must be between 1 and 4').isInt({ min: 1, max: 4 }),
+    ],
+    async (req, res) => {
+        // Check for validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        // Create a new category
-        const newCategory = new Category({
-            name,
-            description,
-            priorityLevel,
-        });
+        const { name, description, priorityLevel } = req.body;
 
-        // Save the category to the database
-        await newCategory.save();
+        try {
+            // Check if the category already exists
+            const existingCategory = await Category.findOne({ name });
+            if (existingCategory) {
+                return res.status(400).json({ message: 'Category with this name already exists' });
+            }
 
-        // Respond with the created category
-        res.status(201).json(newCategory);
+            // Create a new category
+            const newCategory = new Category({
+                name,
+                description,
+                priorityLevel,
+            });
+
+            // Save the category to the database
+            await newCategory.save();
+
+            // Respond with the created category
+            res.status(201).json(newCategory);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Error creating category', error: error.message });
+        }
+    }
+);
+
+// Fetch category by ID (optional additional feature)
+router.get('/:id', async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
+        if (!category) {
+            return res.status(404).json({ message: 'Category not found' });
+        }
+        res.json(category);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error creating category', error: error.message });
+        res.status(500).json({ message: 'Error fetching category', error: error.message });
     }
 });
 
