@@ -9,33 +9,64 @@ const LoadingSpinner = () => (
 );
 
 // Category Select Component
-const CategorySelect = ({ categories, selectedCategory, onCategoryChange }) => (
-  <select
-    name="category"
-    value={selectedCategory}
-    onChange={onCategoryChange}
-    required
-  >
-    <option value="" disabled>
-      Select Category
-    </option>
-    {categories.map((category) => (
-      <option
-        key={category._id}
-        value={category._id}
-        title={category.description}
-      >
-        {category.name}
+const CategorySelect = ({ categories, selectedCategory, onCategoryChange }) => {
+  return (
+    <select
+      name="category"
+      value={selectedCategory}
+      onChange={onCategoryChange}
+      required
+    >
+      <option value="" disabled>
+        Select Category
       </option>
-    ))}
-  </select>
-);
+      {categories.map((category) => (
+        <option key={category._id} value={category._id}>
+          {category.name}
+        </option>
+      ))}
+    </select>
+  );
+};
 
 const TaskFormPage = () => {
   const [token, setToken] = useState("");
+  const [categoriesList, setCategoriesList] = useState([]); // Ensure default is an array
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
   useEffect(() => {
     const storageToken = localStorage.getItem("token");
     setToken(storageToken);
+
+    // Fetch categories from the API
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/categories", {
+          headers: {
+            Authorization: `Bearer ${storageToken}`,
+          },
+        });
+
+        if (Array.isArray(response.data.categories)) {
+          setCategoriesList(response.data.categories); // Set categories list
+        } else {
+          console.error("Unexpected categories response format", response.data);
+          setCategoriesList([]); // Default to an empty array if response is not an array
+        }
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+        setCategoriesList([]); // Handle errors by falling back to an empty array
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    if (storageToken) {
+      fetchCategories();
+    } else {
+      setCategoriesList([]); // Default to an empty array if no token is found
+      setLoadingCategories(false);
+    }
   }, []);
 
   const [task, setTask] = useState({
@@ -45,144 +76,74 @@ const TaskFormPage = () => {
     status: "pending",
     category: "", // Store category ID
     priority: "", // Store priority level
+    visibility: "private", // Set default visibility to private
   });
+
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const categoriesList = [
-    {
-      _id: "work",
-      name: "Work",
-      description: "Work-related tasks",
-      priorityLevel: 1,
-    },
-    {
-      _id: "personal",
-      name: "Personal",
-      description: "Personal tasks",
-      priorityLevel: 2,
-    },
-    {
-      _id: "health",
-      name: "Health",
-      description: "Health and fitness tasks",
-      priorityLevel: 3,
-    },
-    {
-      _id: "finance",
-      name: "Finance",
-      description: "Budgeting, bills, and financial management tasks",
-      priorityLevel: 3,
-    },
-    {
-      _id: "education",
-      name: "Education",
-      description: "Learning goals, courses, or skill-building activities",
-      priorityLevel: 2,
-    },
-    {
-      _id: "family",
-      name: "Family",
-      description: "Family obligations and household tasks",
-      priorityLevel: 1,
-    },
-    {
-      _id: "shopping",
-      name: "Shopping",
-      description: "Shopping lists or items to buy",
-      priorityLevel: 3,
-    },
-    {
-      _id: "errands",
-      name: "Errands",
-      description: "Quick errands or small tasks outside of home or work",
-      priorityLevel: 2,
-    },
-    {
-      _id: "travel",
-      name: "Travel",
-      description: "Planning for trips, vacations, and travel logistics",
-      priorityLevel: 3,
-    },
-    {
-      _id: "miscellaneous",
-      name: "Miscellaneous",
-      description: "General tasks that don’t fall into any specific category",
-      priorityLevel: 4,
-    },
-  ];
-
-  // Handle change function
+  // Handle form field changes
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setTask((prevTask) => ({
-      ...prevTask,
-      [name]: value,
-    }));
+    const { name, value, type, checked } = e.target;
+    if (type === "radio") {
+      setTask((prevTask) => ({
+        ...prevTask,
+        [name]: checked ? value : prevTask[name],
+      }));
+    } else {
+      setTask((prevTask) => ({
+        ...prevTask,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
+    setError(null); // Reset any previous error message
+    setSuccess(null); // Reset any previous success message
 
     // Validate required fields
-    if (
-      !task.title ||
-      !task.description ||
-      !task.deadline ||
-      !task.category ||
-      !task.priority
-    ) {
+    if (!task.title || !task.description || !task.deadline || !task.category || !task.priority) {
       return setError("All fields must be filled out.");
-    }
-
-    // Ensure priority is an integer between 1 and 4
-    const priorityNumber = parseInt(task.priority, 10); // Convert to integer
-    if (isNaN(priorityNumber) || priorityNumber < 1 || priorityNumber > 4) {
-      return setError("Priority must be a number between 1 and 4.");
     }
 
     const taskData = {
       title: task.title,
       description: task.description,
-      category: task.category,
-      priority: priorityNumber,
-      deadline: new Date(task.deadline).toISOString(),
+      deadline: task.deadline,
+      categoryId: task.category, // Make sure this is the correct field
+      priority: task.priority,
+      visibility: task.visibility,
     };
 
-    console.log(taskData);
-
-    setLoading(true);
-
-    const authToken = `Bearer ${token}`;
-
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/tasks", 
-        taskData,  // Pass taskData directly without an additional object wrapper
-        {
-          headers: {
-            Authorization: authToken,
-          },
-        }
-      );
-      console.log("Task created:", response.data);
-      setSuccess("Task created successfully!");
+      if (!token) {
+        return setError("Authorization token is missing. Please login.");
+      }
 
-      // Reset form after successful submission
-      setTask({
-        title: "",
-        description: "",
-        deadline: "",
-        status: "pending",
-        category: "",
-        priority: "",
+      setLoading(true);
+
+      const response = await axios.post("http://localhost:5000/api/tasks", taskData, {
+        headers: {
+          Authorization: `Bearer ${token}`, // Ensure token is passed in headers
+        },
       });
-    } catch (err) {
-      console.error("Error creating task:", err);
-      setError("Failed to create task. Please try again.");
+
+      if (response.status === 201) {
+        setSuccess("Task created successfully!");
+        setTask({
+          title: "",
+          description: "",
+          deadline: "",
+          category: "",
+          priority: "",
+        }); // Reset form after successful submission
+      }
+    } catch (error) {
+      console.error("Error creating task:", error.response?.data || error.message);
+      setError(error.response?.data?.message || "Failed to create task. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -192,7 +153,6 @@ const TaskFormPage = () => {
     <div>
       <h2>Create Task</h2>
 
-      {/* Success message */}
       {success && <p style={{ color: "green" }}>{success}</p>}
 
       <form onSubmit={handleSubmit}>
@@ -219,18 +179,20 @@ const TaskFormPage = () => {
           required
         />
         <select name="status" value={task.status} onChange={handleChange}>
-          <option value="pending">Pending (Task is not started yet)</option>
-          <option value="in-progress">
-            In Progress (Task is being worked on)
-          </option>
-          <option value="completed">Completed (Task is finished)</option>
+          <option value="pending">Pending</option>
+          <option value="in-progress">In Progress</option>
+          <option value="completed">Completed</option>
         </select>
 
-        <CategorySelect
-          categories={categoriesList}
-          selectedCategory={task.category}
-          onCategoryChange={handleChange}
-        />
+        {loadingCategories ? (
+          <LoadingSpinner />
+        ) : (
+          <CategorySelect
+            categories={categoriesList}
+            selectedCategory={task.category}
+            onCategoryChange={handleChange}
+          />
+        )}
 
         <input
           type="number"
@@ -243,12 +205,34 @@ const TaskFormPage = () => {
           max="4"
         />
 
-        <button type="submit" disabled={loading}>
+        <div>
+          <label>
+            <input
+              type="radio"
+              name="visibility"
+              value="public"
+              checked={task.visibility === "public"}
+              onChange={handleChange}
+            />
+            Public (Anyone can make an offer)
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="visibility"
+              value="private"
+              checked={task.visibility === "private"}
+              onChange={handleChange}
+            />
+            Private (Only you can view this task)
+          </label>
+        </div>
+
+        <button type="submit" disabled={loading || loadingCategories}>
           {loading ? <LoadingSpinner /> : "Create Task"}
         </button>
       </form>
 
-      {/* Error message */}
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );

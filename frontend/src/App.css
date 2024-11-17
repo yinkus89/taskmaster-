@@ -116,3 +116,72 @@ button {
 button:hover {
   background-color: #45a049;
 }
+h1 {
+  text-align: center;
+}
+
+table {
+  width: 80%;
+  margin: 20px auto;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  transition: background-color 0.3s;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+th {
+  background-color: #4CAF50;
+  color: white;
+}
+
+td {
+  background-color: #f9f9f9;
+}
+
+tr:nth-child(even) td {
+  background-color: #f1f1f1;
+}
+
+tr:hover td {
+  background-color: #ddd;
+}
+
+/* Dark theme */
+body.dark-theme {
+  background-color: #333;
+  color: #f1f1f1;
+}
+
+table.dark-theme {
+  background-color: #444;
+}
+
+table.dark-theme th {
+  background-color: #555;
+}
+
+table.dark-theme td {
+  background-color: #555;
+}
+
+table.dark-theme tr:nth-child(even) td {
+  background-color: #666;
+}
+
+button {
+  padding: 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin: 20px;
+}
+
+button:hover {
+  background-color: #45a049;
+}

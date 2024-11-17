@@ -8,7 +8,7 @@ import './App.css'; // Import your styles
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
-  <BrowserRouter> {/* Wraps your app to enable routing */}
+  <BrowserRouter> {/* Wrap your entire app with BrowserRouter */}
     <ThemeProvider> {/* Wrap ThemeProvider around your app for theme management */}
       <App />
     </ThemeProvider>

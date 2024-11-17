@@ -1,73 +1,136 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
 
-function TaskListPage() {
-  const { userId } = useParams();
-  const [tasks, setTasks] = useState([]);
-  const [categories, setCategories] = useState([]);
+const TaskListPage = () => {
+  const [tasks, setTasks] = useState([]); // Tasks state
+  const [categories, setCategories] = useState([]); // Categories state
+  const [error, setError] = useState(null); // Error state
+  const [loading, setLoading] = useState({ tasks: false, categories: false }); // Loading state for tasks and categories
+  const [selectedCategory, setSelectedCategory] = useState(''); // Selected category state
 
-  useEffect(() => {
-    console.log(userId);
-    const token = localStorage.getItem("token");
-    const fetchTasks = async () => {
-      try {
-        // Fetch tasks
-        const taskResponse = await axios.get(
-          "http://localhost:5000/api/tasks",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              userId: userId,
-            },
-            withCredentials: true,
-          }
-        );
-        console.log(taskResponse.data.tasks);
-        setTasks(taskResponse.data.tasks);
-        console.log(tasks);
-      } catch (err) {
-        console.log(err);
+  const fetchCategories = useCallback(async () => {
+    setLoading(prev => ({ ...prev, categories: true }));
+    setError(null);
+
+    try {
+      const response = await axios.get("http://localhost:5000/api/categories");
+      if (Array.isArray(response.data.categories)) {
+        setCategories(response.data.categories); // Assuming response contains categories in 'categories'
+      } else {
+        setError("Failed to load categories. Invalid response format.");
       }
-    };
+    } catch (error) {
+      setError("Failed to load categories. Please try again.");
+    } finally {
+      setLoading(prev => ({ ...prev, categories: false }));
+    }
+  }, []);
 
-    fetchTasks();
-  }, [userId]);
+  const fetchTasks = useCallback(async () => {
+    setLoading(prev => ({ ...prev, tasks: true }));
+    setError(null);
+
+    const token = localStorage.getItem("token");
+    const url = selectedCategory
+      ? `http://localhost:5000/api/tasks?category=${selectedCategory}`
+      : "http://localhost:5000/api/tasks"; // Fetch all tasks
+
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    try {
+      const response = await axios.get(url, { headers });
+      setTasks(response.data.tasks); // Assuming response contains tasks in 'tasks'
+    } catch (error) {
+      if (error.response?.status === 401) {
+        const refreshed = await handleTokenRefresh();
+        if (refreshed) {
+          fetchTasks(); // Retry after refreshing token
+        } else {
+          setError("Session expired. Please log in again.");
+        }
+      } else {
+        setError("Failed to load tasks. Please try again.");
+      }
+    } finally {
+      setLoading(prev => ({ ...prev, tasks: false }));
+    }
+  }, [selectedCategory]);
+
+  const handleTokenRefresh = async () => {
+    try {
+      const response = await axios.post("http://localhost:5000/api/auth/refresh", {}, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const newToken = response.data.token;
+      localStorage.setItem("token", newToken);
+      return true;
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+      return false;
+    }
+  };
+
+  const handleCategoryChange = (e) => {
+    setSelectedCategory(e.target.value); // Set the selected category
+  };
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const categoryResponse = await axios.get(
-          "http://localhost:5000/api/categories",
-          { withCredentials: true }
-        );
-        setCategories(categoryResponse.data);
-      } catch {}
-    };
-    fetchCategories();
-  }, [userId]);
+    fetchCategories(); // Fetch categories when the component mounts
+    fetchTasks(); // Fetch tasks when the component mounts
+  }, [fetchCategories, fetchTasks]);
 
-  // Get category name from category ID
-  const getCategoryName = (categoryId) => {
-    const category = categories.find((cat) => cat._id === categoryId);
-    return category ? category.name : "Unknown Category";
-  };
+  if (loading.tasks || loading.categories) {
+    return <p>Loading tasks and categories...</p>;
+  }
 
   return (
     <div>
-      <h1>Your Tasks</h1>
-      <ul>
-        {tasks &&
-          tasks.map((task) => (
-            <li key={task._id}>
-              <strong>{task.title}</strong> - {task.priority}
-              <p>{task.description}</p>
-              <p>Status: {task.status}</p>
-            </li>
-          ))}
-      </ul>
+      <h2>Task List</h2>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      <label htmlFor="category">Filter by Category: </label>
+      <select
+        id="category"
+        value={selectedCategory}
+        onChange={handleCategoryChange}
+      >
+        <option value="">All Categories</option>
+        {categories.length === 0 ? (
+          <option disabled>Loading categories...</option>
+        ) : (
+          categories.map((category) => (
+            <option key={category._id} value={category._id}>
+              {category.name.charAt(0).toUpperCase() + category.name.slice(1)}
+            </option>
+          ))
+        )}
+      </select>
+
+      {tasks.length === 0 ? (
+        <p>No tasks available.</p>
+      ) : (
+        <table border="1" cellPadding="10" cellSpacing="0">
+          <thead>
+            <tr>
+            <th>Title</th>
+              <th>Description</th>
+              <th>Category</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tasks.map((task) => (
+              <tr key={task._id}>
+                <td>{task.title}</td>
+                <td>{task.description}</td>
+                <td>{task.category}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
-}
+};
 
 export default TaskListPage;
+ 
