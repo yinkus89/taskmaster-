@@ -1,11 +1,9 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
-import Header from "./component/Header";
-import Footer from "./component/Footer";
-import Navbar from "./component/Navbar";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import Navbar from "./components/Navbar";
 import HomePage from "./pages/HomePage";
-import AboutUsPage from "./pages/AboutUsPage";
-
 
 // Lazy loaded components
 const LoginPage = lazy(() => import("./pages/LoginPage"));
@@ -15,6 +13,8 @@ const TaskDetailsPage = lazy(() => import("./pages/TaskDetailsPage"));
 const TaskListPage = lazy(() => import("./pages/TaskListPage"));
 const PublicTasksPage = lazy(() => import("./pages/PublicTasksPage"));
 const PublicTaskDetailsPage = lazy(() => import("./pages/PublicTaskDetailsPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
 
 function App() {
   return (
@@ -40,11 +40,11 @@ function App() {
               <Route path="public/:taskId" element={<PublicTaskDetailsPage />} />
             </Route>
 
-            {/* About Page */}
-            <Route path="/about" element={<AboutUsPage />} />
+            {/* About Us Page */}
+            <Route path="/aboutus" element={<AboutUsPage />} />  {/* Ensure path matches the Navbar */}
 
-            
-            
+            {/* Profile Page */}
+            <Route path="/profile" element={<ProfilePage />} />
           </Routes>
         </Suspense>
       </div>

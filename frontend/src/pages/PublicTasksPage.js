@@ -1,38 +1,47 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom"; // Make sure to import Link for routing
 
 const PublicTasksPage = () => {
-  const [publicTasks, setPublicTasks] = useState([]); // State to store the tasks
-  const [error, setError] = useState(null); // State for error messages
-  const [loading, setLoading] = useState(true); // Loading state
+  const [publicTasks, setPublicTasks] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch public tasks
   const fetchPublicTasks = useCallback(async () => {
-    setLoading(true); // Set loading to true when fetching starts
-    setError(null); // Clear previous errors
+    setLoading(true);
+    setError(null);
+
+    // Get token from localStorage (or wherever it's stored)
+    const token = localStorage.getItem("token");
 
     try {
-      // Public tasks should be fetched without the Authorization header
-      const tasksResponse = await axios.get("http://localhost:5000/api/tasks/public");
+      const tasksResponse = await axios.get("http://localhost:5000/api/tasks/public", {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",  // Attach token if available
+        }
+      });
 
       if (tasksResponse.data.success) {
-        setPublicTasks(tasksResponse.data.tasks); // Set the tasks data in state
+        setPublicTasks(tasksResponse.data.tasks);
       } else {
         setError("Failed to load public tasks.");
       }
     } catch (error) {
-      console.error("Error fetching public tasks:", error); // Added console error for debugging
-      setError("Failed to load public tasks. Please try again.");
+      console.error("Error fetching public tasks:", error.response || error);
+      setError(error.response?.data?.message || "Failed to load public tasks. Please try again.");
     } finally {
-      setLoading(false); // Set loading to false once the request is completed
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchPublicTasks(); // Fetch public tasks when the component mounts
+    fetchPublicTasks();
   }, [fetchPublicTasks]);
 
+  // Show loading spinner while data is being fetched
   if (loading) {
-    return <p>Loading public tasks...</p>;
+    return <div className="spinner">Loading public tasks...</div>;
   }
 
   return (
@@ -42,7 +51,7 @@ const PublicTasksPage = () => {
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {publicTasks.length === 0 ? (
-        <p>No public tasks available.</p>
+        <p>No public tasks available. <a href="/create-task">Create a new task.</a></p>
       ) : (
         <ul>
           {publicTasks.map((task) => (
@@ -51,6 +60,7 @@ const PublicTasksPage = () => {
               <p>{task.description}</p>
               <p>Priority: {task.priority}</p>
               <p>Deadline: {new Date(task.deadline).toLocaleDateString()}</p>
+              <Link to={`/tasks/${task._id}`}>View Task</Link> {/* Example of passing the task ID */}
             </li>
           ))}
         </ul>

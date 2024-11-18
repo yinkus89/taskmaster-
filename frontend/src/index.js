@@ -2,14 +2,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import ThemeProvider from './contexts/ThemeContext'; // Ensure the correct path to ThemeContext
-import './App.css'; // Import your styles
+import ThemeProvider from './contexts/ThemeContext'; // Make sure the path is correct
+import './App.css'; // Import global styles
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
-  <BrowserRouter> {/* Wrap your entire app with BrowserRouter */}
-    <ThemeProvider> {/* Wrap ThemeProvider around your app for theme management */}
+  <BrowserRouter>
+    <ThemeProvider>
       <App />
     </ThemeProvider>
   </BrowserRouter>

@@ -112,7 +112,7 @@ const TaskListPage = () => {
         <table border="1" cellPadding="10" cellSpacing="0">
           <thead>
             <tr>
-            <th>Title</th>
+              <th>Title</th>
               <th>Description</th>
               <th>Category</th>
             </tr>
@@ -122,7 +122,7 @@ const TaskListPage = () => {
               <tr key={task._id}>
                 <td>{task.title}</td>
                 <td>{task.description}</td>
-                <td>{task.category}</td>
+                <td>{task.category?.name}</td>
               </tr>
             ))}
           </tbody>
@@ -133,4 +133,3 @@ const TaskListPage = () => {
 };
 
 export default TaskListPage;
- 

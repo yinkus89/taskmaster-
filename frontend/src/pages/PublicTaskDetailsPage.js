@@ -1,40 +1,38 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { format } from "date-fns"; // Optional for date formatting
 
 const PublicTaskDetailsPage = () => {
-    const { taskId } = useParams(); // Get task ID from URL params
+    const { taskId } = useParams();
     const [task, setTask] = useState(null);
     const [offerMessage, setOfferMessage] = useState("");
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
-    const [loading, setLoading] = useState(true); // Loading state for task data
+    const [loading, setLoading] = useState(true);
 
-    // Fetch task details on component mount
     useEffect(() => {
         const fetchTaskDetails = async () => {
             try {
-                console.log(`Fetching details for task ID: ${taskId}`); // Debugging: Log taskId
+                console.log(`Fetching details for task ID: ${taskId}`);
                 const { data } = await axios.get(`/api/tasks/public/${taskId}`);
-                
+
                 if (data && data.task) {
-                    setTask(data.task); // Set the task data from response
-                    setLoading(false);
+                    setTask(data.task);
                 } else {
-                    console.error("No task data returned:", data); // Log response if task is missing
-                    setError("Failed to load task details.");
-                    setLoading(false);
+                    console.error("No task data returned:", data);
+                    setError("Task details not found.");
                 }
             } catch (err) {
                 console.error("Error fetching task details:", err);
                 setError("Failed to load task details.");
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchTaskDetails();
 
-        // Cleanup the success and error state on unmount or when taskId changes
         return () => {
             setError(null);
             setSuccess(null);
@@ -56,7 +54,6 @@ const PublicTaskDetailsPage = () => {
         }
 
         try {
-            // Send the offer message
             await axios.post(
                 `/api/tasks/${taskId}/offer`,
                 { message: offerMessage },
@@ -74,7 +71,7 @@ const PublicTaskDetailsPage = () => {
         }
     };
 
-    if (loading) return <p>Loading task details...</p>;
+    if (loading) return <div className="spinner">Loading task details...</div>;
     if (error) return <p>{error}</p>;
 
     return (
@@ -83,7 +80,7 @@ const PublicTaskDetailsPage = () => {
             <p>{task.description}</p>
             <p><strong>Category:</strong> {task.category}</p>
             <p><strong>Priority:</strong> {task.priority}</p>
-            <p><strong>Deadline:</strong> {new Date(task.deadline).toLocaleDateString()}</p>
+            <p><strong>Deadline:</strong> {format(new Date(task.deadline), 'MMM dd, yyyy')}</p>
 
             {/* Offer Form */}
             <h3>Make an Offer</h3>
@@ -94,7 +91,7 @@ const PublicTaskDetailsPage = () => {
                     placeholder="Write your offer message here..."
                     required
                 />
-                <button type="submit">Submit Offer</button>
+                <button type="submit" disabled={loading}>Submit Offer</button>
             </form>
 
             {success && <p style={{ color: "green" }}>{success}</p>}

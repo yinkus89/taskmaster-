@@ -1,30 +1,37 @@
 import React, { useContext } from 'react';
-import { ThemeContext } from '../contexts/ThemeContext'; // Import the ThemeContext
+import { ThemeContext } from '../contexts/ThemeContext';
 
 const AboutUsPage = () => {
-    const { theme } = useContext(ThemeContext); // Access theme context for styling
+    const { theme } = useContext(ThemeContext);
 
     return (
-        <div style={{ backgroundColor: theme.background, color: theme.color, padding: '20px' }}>
-            <h1>About Us</h1>
-            <p>
-                Welcome to our application! We are a team of passionate developers
-                working to build innovative and user-friendly solutions. Our goal is
-                to provide the best experience for our users while making sure that
-                our platform is intuitive and easy to use.
+        <div style={{
+            backgroundColor: theme.background,
+            color: theme.color,
+            padding: '40px',
+            fontFamily: 'Arial, sans-serif',
+            lineHeight: '1.6',
+        }}>
+            <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>About Us</h1>
+            <p style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'justify' }}>
+                <strong>Taskmaster</strong> is a modern task management application designed to help individuals
+                and teams achieve their goals effortlessly. With a user-friendly interface and powerful features,
+                Taskmaster enables you to:
             </p>
-            <h2>Our Mission</h2>
-            <p>
-                Our mission is to create software that solves real-world problems
-                and makes people's lives easier. We aim to deliver high-quality
-                products that are reliable, scalable, and secure.
+            <ul style={{ maxWidth: '800px', margin: '20px auto', textAlign: 'left', paddingLeft: '20px' }}>
+                <li>Organize your tasks efficiently.</li>
+                <li>Prioritize what matters most.</li>
+                <li>Track progress seamlessly.</li>
+            </ul>
+            <h2 style={{ textAlign: 'center', margin: '40px 0 20px' }}>Our Mission</h2>
+            <p style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'justify' }}>
+                At Taskmaster, our mission is to simplify task management for everyone. We strive to build tools
+                that solve real-world problems, enhance productivity, and bring clarity to your workflow.
             </p>
-            <h2>Our Team</h2>
-            <p>
-                We are a diverse group of developers, designers, and project
-                managers who work together to bring ideas to life. Our team is
-                committed to continuous learning and growth, always seeking
-                innovative ways to improve our products.
+            <h2 style={{ textAlign: 'center', margin: '40px 0 20px' }}>Why Choose Taskmaster?</h2>
+            <p style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'justify' }}>
+                Whether you’re managing personal tasks or collaborating with a team, Taskmaster adapts to your needs.
+                By staying focused on what matters most, you can transform plans into achievements with ease.
             </p>
         </div>
     );

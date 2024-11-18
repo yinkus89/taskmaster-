@@ -11,15 +11,8 @@ const LoadingSpinner = () => (
 // Category Select Component
 const CategorySelect = ({ categories, selectedCategory, onCategoryChange }) => {
   return (
-    <select
-      name="category"
-      value={selectedCategory}
-      onChange={onCategoryChange}
-      required
-    >
-      <option value="" disabled>
-        Select Category
-      </option>
+    <select name="category" value={selectedCategory} onChange={onCategoryChange}>
+      <option value="">Select Category</option>
       {categories.map((category) => (
         <option key={category._id} value={category._id}>
           {category.name}
@@ -31,14 +24,14 @@ const CategorySelect = ({ categories, selectedCategory, onCategoryChange }) => {
 
 const TaskFormPage = () => {
   const [token, setToken] = useState("");
-  const [categoriesList, setCategoriesList] = useState([]); // Ensure default is an array
+  const [categoriesList, setCategoriesList] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
+  // Fetch categories when the component mounts
   useEffect(() => {
     const storageToken = localStorage.getItem("token");
     setToken(storageToken);
 
-    // Fetch categories from the API
     const fetchCategories = async () => {
       try {
         const response = await axios.get("http://localhost:5000/api/categories", {
@@ -48,14 +41,14 @@ const TaskFormPage = () => {
         });
 
         if (Array.isArray(response.data.categories)) {
-          setCategoriesList(response.data.categories); // Set categories list
+          setCategoriesList(response.data.categories);
         } else {
           console.error("Unexpected categories response format", response.data);
-          setCategoriesList([]); // Default to an empty array if response is not an array
+          setCategoriesList([]);
         }
       } catch (error) {
         console.error("Failed to fetch categories:", error);
-        setCategoriesList([]); // Handle errors by falling back to an empty array
+        setCategoriesList([]);
       } finally {
         setLoadingCategories(false);
       }
@@ -64,7 +57,7 @@ const TaskFormPage = () => {
     if (storageToken) {
       fetchCategories();
     } else {
-      setCategoriesList([]); // Default to an empty array if no token is found
+      setCategoriesList([]);
       setLoadingCategories(false);
     }
   }, []);
@@ -74,16 +67,15 @@ const TaskFormPage = () => {
     description: "",
     deadline: "",
     status: "pending",
-    category: "", // Store category ID
-    priority: "", // Store priority level
-    visibility: "private", // Set default visibility to private
+    category: "", // This should store category _id
+    priority: "",
+    visibility: "private",
   });
 
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Handle form field changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (type === "radio") {
@@ -101,8 +93,8 @@ const TaskFormPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null); // Reset any previous error message
-    setSuccess(null); // Reset any previous success message
+    setError(null);
+    setSuccess(null);
 
     // Validate required fields
     if (!task.title || !task.description || !task.deadline || !task.category || !task.priority) {
@@ -113,7 +105,7 @@ const TaskFormPage = () => {
       title: task.title,
       description: task.description,
       deadline: task.deadline,
-      categoryId: task.category, // Make sure this is the correct field
+      categoryId: task.category, // Ensure it's the category _id
       priority: task.priority,
       visibility: task.visibility,
     };
@@ -127,7 +119,7 @@ const TaskFormPage = () => {
 
       const response = await axios.post("http://localhost:5000/api/tasks", taskData, {
         headers: {
-          Authorization: `Bearer ${token}`, // Ensure token is passed in headers
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -139,7 +131,8 @@ const TaskFormPage = () => {
           deadline: "",
           category: "",
           priority: "",
-        }); // Reset form after successful submission
+          visibility: "private", // Reset visibility to default
+        });
       }
     } catch (error) {
       console.error("Error creating task:", error.response?.data || error.message);
@@ -153,7 +146,8 @@ const TaskFormPage = () => {
     <div>
       <h2>Create Task</h2>
 
-      {success && <p style={{ color: "green" }}>{success}</p>}
+      {success && <p className="success">{success}</p>}
+      {error && <p className="error">{error}</p>}
 
       <form onSubmit={handleSubmit}>
         <input
@@ -232,8 +226,6 @@ const TaskFormPage = () => {
           {loading ? <LoadingSpinner /> : "Create Task"}
         </button>
       </form>
-
-      {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
 };

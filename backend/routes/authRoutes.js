@@ -8,7 +8,7 @@ const router = express.Router();
 // Middleware imports
 const authenticate = require('../middlewares/authMiddleware');
 const ownershipMiddleware = require('../middlewares/ownershipMiddleware');
-const rateLimiter = require('../middlewares/rateLimiter'); // Assuming you've created this middleware
+const loginLimiter = require('../middlewares/loginLimiter'); // Assuming you've created this middleware
 
 // Input validation
 const Joi = require("joi");
@@ -55,7 +55,7 @@ router.post("/signup", async (req, res) => {
 });
 
 // Login route with rate limiting
-router.post("/login", rateLimiter, async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => { // Fixed to use the correct middleware name 'loginLimiter'
   const { email, password } = req.body;
 
   if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
