@@ -1,56 +1,50 @@
 const express = require("express");
 const User = require("../models/User");
-const isAuthenticated = require("../middlewares/authMiddleware"); // Import authentication middleware
-const sanitizeUser = require("../middlewares/sanitizeUser"); // Assuming this sanitizes input for updates
-
+const isAuthenticated = require("../middleware/authMiddleware");
 const router = express.Router();
 
-// Route to get the authenticated user's profile (protected route)
-router.get("/profile", isAuthenticated, async (req, res) => {
+
+// Get profile data for the authenticated user
+
+
+router.get('/api/user/profile', isAuthenticated, async (req, res) => {
   try {
-    // Find the user by the authenticated user's ID in req.user (set by the isAuthenticated middleware)
-    const user = await User.findById(req.user._id);
-
-    // Check if the user exists
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Exclude sensitive information like password, salt, etc.
-    const { password, salt, ...userData } = user.toObject();
-
-    // Send back the user profile, excluding sensitive information
+    // Assuming `req.user` contains the authenticated user object
+    const user = req.user;
     res.json({
-      message: "Profile retrieved successfully",
-      profile: userData,
+      success: true,
+      userProfile: user,
     });
-  } catch (err) {
-    console.error("Error fetching user profile:", err);
+  } catch (error) {
     res.status(500).json({
-      message: "Server error",
-      error: err.message || "An unknown error occurred",
+      success: false,
+      message: "Error fetching user profile",
     });
   }
 });
 
-// Route to update the authenticated user's profile
-router.put("/profile", isAuthenticated, sanitizeUser, async (req, res) => {
-  try {
-    // Find the user by the authenticated user's ID
-    const user = await User.findById(req.user._id);
 
-    // Check if the user exists
-    if (!user) {
+// Route to update the authenticated user's profile
+router.patch("/profile", isAuthenticated, async (req, res) => {
+  try {
+    const allowedUpdates = ["name", "email", "avatar"];
+    const updates = Object.keys(req.body);
+    const isValidOperation = updates.every((key) => allowedUpdates.includes(key));
+
+    if (!isValidOperation) {
+      return res.status(400).json({ message: "Invalid fields in update" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, req.body, {
+      new: true, // Return the updated document
+      runValidators: true, // Enforce schema validation
+    });
+
+    if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update the user profile with sanitized data
-    const updatedUser = await User.findByIdAndUpdate(req.user._id, req.body, { new: true });
-
-    // Exclude sensitive information from the response
     const { password, salt, ...userData } = updatedUser.toObject();
-
-    // Send back the updated user profile
     res.json({
       message: "Profile updated successfully",
       profile: userData,
@@ -63,5 +57,18 @@ router.put("/profile", isAuthenticated, sanitizeUser, async (req, res) => {
     });
   }
 });
+// GET /api/tasks/user/:userId
+// GET /api/tasks/user/:userId
+router.get("/user/:userId", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const tasks = await Task.find({ userId }).populate('categoryId', 'name');
+    res.status(200).json({ tasks });
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    res.status(500).json({ message: "Error fetching tasks" });
+  }
+});
+
 
 module.exports = router;

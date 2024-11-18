@@ -1,16 +1,9 @@
-// Example: Category model (models/Category.js)
-const mongoose = require('mongoose');
+// (models/Category.js)
+const mongoose = require("mongoose");
 
 const categorySchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: false,
-  },
+  name: { type: String, required: true },
+  description: { type: String },
 });
 
-const Category = mongoose.model('Category', categorySchema);
-module.exports = Category;
+module.exports = mongoose.model("Category", categorySchema);
