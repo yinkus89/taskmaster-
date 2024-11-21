@@ -1,5 +1,3 @@
-/* App.css */
-
 /* Basic Reset */
 * {
   margin: 0;
@@ -11,6 +9,8 @@ body {
   font-family: Arial, sans-serif;
   line-height: 1.6;
   background-color: #f9f9f9;
+  color: #333;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Centered Container for Main Content */
@@ -55,6 +55,7 @@ button {
   border-radius: 4px;
   font-size: 16px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 button:hover {
@@ -83,4 +84,100 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: #333;
+}
+
+.login-container {
+  width: 300px;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field {
+  margin-bottom: 10px;
+}
+
+.error-message {
+  color: red;
+  font-size: 14px;
+}
+
+h1 {
+  text-align: center;
+}
+
+table {
+  width: 80%;
+  margin: 20px auto;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  transition: background-color 0.3s ease;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+th {
+  background-color: #4CAF50;
+  color: white;
+}
+
+td {
+  background-color: #f9f9f9;
+}
+
+tr:nth-child(even) td {
+  background-color: #f1f1f1;
+}
+
+tr:hover td {
+  background-color: #ddd;
+}
+
+/* Dark theme */
+body.dark-theme {
+  background-color: #333;
+  color: #f1f1f1;
+}
+
+header.dark-theme, footer.dark-theme {
+  background-color: #555;
+  color: #f1f1f1;
+}
+
+button.dark-theme {
+  background-color: #444;
+}
+
+button.dark-theme:hover {
+  background-color: #666;
+}
+
+table.dark-theme {
+  background-color: #444;
+}
+
+table.dark-theme th {
+  background-color: #555;
+}
+
+table.dark-theme td {
+  background-color: #555;
+}
+
+table.dark-theme tr:nth-child(even) td {
+  background-color: #666;
+}
+
+/* Add transitions to enhance user experience */
+button, table, header, footer {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
