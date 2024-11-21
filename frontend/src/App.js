@@ -1,8 +1,8 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import Navbar from "./components/Navbar";
+import Header from "./component/Header";
+import Footer from "./component/Footer";
+import Navbar from "./component/Navbar";
 import HomePage from "./pages/HomePage";
 
 // Lazy loaded components

@@ -3,6 +3,7 @@ const User = require("../models/User");
 
 const isAuthenticated = async (req, res, next) => {
   try {
+    // Extract the Authorization header
     const authHeader = req.header("Authorization");
 
     // Check if the Authorization header exists and is properly formatted
@@ -13,7 +14,7 @@ const isAuthenticated = async (req, res, next) => {
       });
     }
 
-    // Extract token from the Authorization header
+    // Extract the token from the Authorization header
     const token = authHeader.split(" ")[1];
 
     // Verify the token
@@ -21,6 +22,7 @@ const isAuthenticated = async (req, res, next) => {
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
+      // Handle different JWT verification errors
       const message =
         err.name === "TokenExpiredError"
           ? "Token has expired. Please log in again."
@@ -32,7 +34,7 @@ const isAuthenticated = async (req, res, next) => {
       });
     }
 
-    // Validate the token payload for userId
+    // Ensure the token has a valid userId
     if (!decoded.userId) {
       return res.status(401).json({
         success: false,
@@ -40,10 +42,10 @@ const isAuthenticated = async (req, res, next) => {
       });
     }
 
-    // Fetch the user from the database
+    // Retrieve the user from the database using the userId from the decoded token
     const user = await User.findById(decoded.userId);
 
-    // If user not found, return 404
+    // If no user found, return 404
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -58,7 +60,6 @@ const isAuthenticated = async (req, res, next) => {
     next();
   } catch (err) {
     console.error("Authentication error:", err);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error during authentication.",
@@ -68,3 +69,4 @@ const isAuthenticated = async (req, res, next) => {
 };
 
 module.exports = isAuthenticated;
+ 

@@ -1,59 +1,69 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require("mongoose");
 const Task = require("../models/Task");
-const Category = require("../models/Category");
 const isAuthenticated = require("../middleware/authMiddleware");
 const ownershipMiddleware = require("../middleware/ownershipMiddleware");
 
-router.get("/", async (req, res) => {
+// Create a new task
+router.post("/create", async (req, res) => {
   try {
-    const tasks = await Task.find()
-      .populate("categoryId", "name")  // Populating only the 'name' of the category
-      .exec();
-    
-    res.status(200).json({ tasks });
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
-    res.status(500).json({ message: "Error fetching tasks" });
-  }
-});
+    const { title, description, deadline, category, priority, visibility } =
+      req.body;
 
-
-// Task Creation - POST /api/tasks
-router.post("/", isAuthenticated, async (req, res) => {
-  try {
-    const { title, description, deadline, categoryId, priority, visibility } = req.body;
-
-    // Validate categoryId existence in the category collection
-    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
-      return res.status(400).json({ message: "Invalid categoryId format" });
+    if (!title || !description || !deadline || !category || !priority) {
+      console.log(title,description,deadline,catgory,priority);
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required." });
     }
 
-    // Use the userId from the authenticated user
-    const userId = req.user._id;
-
-    // Create a new task
     const newTask = new Task({
-      title,
-      description,
-      deadline,
-      categoryId,
-      priority,
-      visibility,
-      userId,
+      title: req.body.title || "test",
+      description: req.body.description || "test",
+      deadline: req.body.deadline || new Date(1999,3,3),
+      status: req.body.status || "pending", // Default status if not provided
+      category: req.body.category || "test",
+      priority: req.body.priority || "test",
+      visibility: req.body.visibility || "private", // Default visibility
+      userId: req.user._id || "test", // Assuming the task is tied to the authenticated user
     });
 
-    const savedTask = await newTask.save();
-    res.status(201).json({ task: savedTask });
-  } catch (error) {
-    console.error("Error creating task:", error);
-    res.status(500).json({ message: "Failed to create task" });
+    // Save the task to the database
+    await newTask.save();
+
+    res.status(201).json({ success: true, task: newTask });
+  } catch (err) {
+    console.error("Error creating task:", err.message);
+    res.status(500).json({ success: false, message: "Error creating task." });
+  }
+});
+// Get all tasks (Admin-only access)
+router.get("/", isAuthenticated, async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+
+    const tasks = await Task.find();
+    res.status(200).json({ success: true, tasks });
+  } catch (err) {
+    console.error("Error fetching tasks:", err.message);
+    res.status(500).json({ success: false, message: "Error fetching tasks." });
   }
 });
 
-// GET /api/tasks/public - Fetch public tasks with optional filters (category, priority, pagination)
+// Get all tasks
+router.get("/", async (req, res) => {
+  try {
+    const tasks = await Task.find(); // Fetch tasks using the model
+    res.status(200).json({ success: true, tasks });
+  } catch (err) {
+    console.error("Error fetching tasks:", err.message);
+    res.status(500).json({ success: false, message: "Error fetching tasks." });
+  }
+});
 
+module.exports = router;
 
 // GET /api/tasks/public - Fetch public tasks with optional filters
 router.get("/public", async (req, res) => {
@@ -76,7 +86,9 @@ router.get("/public", async (req, res) => {
       .limit(parseInt(limit));
 
     if (tasks.length === 0) {
-      return res.status(404).json({ message: "No public tasks available with the given filters." });
+      return res
+        .status(404)
+        .json({ message: "No public tasks available with the given filters." });
     }
 
     res.status(200).json({
@@ -86,13 +98,16 @@ router.get("/public", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching public tasks:", error);
-    res.status(500).json({ message: "Failed to fetch public tasks", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch public tasks", error: error.message });
   }
 });
+
 // Example of fetching tasks for a specific user (Backend route)
 router.get("/tasks", isAuthenticated, async (req, res) => {
   try {
-    const userId = req.user._id;  // Get userId from authenticated user
+    const userId = req.user._id; // Get userId from authenticated user
     const tasks = await Task.find({ userId }).populate("categoryId", "name");
 
     if (tasks.length === 0) {
@@ -106,64 +121,74 @@ router.get("/tasks", isAuthenticated, async (req, res) => {
   }
 });
 
-
-
 // DELETE Task route
-router.delete("/:taskId", isAuthenticated, async (req, res) => {
-  const { taskId } = req.params;
+router.delete(
+  "/:taskId",
+  isAuthenticated,
+  ownershipMiddleware,
+  async (req, res) => {
+    const { taskId } = req.params;
 
-  try {
-    const task = await Task.findById(taskId);
+    try {
+      const task = await Task.findById(taskId);
 
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // If ownershipMiddleware is working, the task owner is already verified by req.user
+      if (task.userId.toString() !== req.user._id.toString()) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this task" });
+      }
+
+      // If the user is authorized, delete the task
+      await task.remove();
+      res.status(200).json({ message: "Task deleted successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
     }
-
-    // Check if the logged-in user is the one who created the task
-    if (task.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized to delete this task" });
-    }
-
-    // If the user is authorized, delete the task
-    await task.remove();
-    res.status(200).json({ message: "Task deleted successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
   }
-});
-
-
+);
 
 // PUT (Update) Task route
-router.put("/:taskId", isAuthenticated, async (req, res) => {
-  try {
-    const task = await Task.findById(req.params.taskId);
+router.put(
+  "/:taskId",
+  isAuthenticated,
+  ownershipMiddleware,
+  async (req, res) => {
+    try {
+      const task = await Task.findById(req.params.taskId);
 
-    if (!task) {
-      return res.status(404).json({ message: "Task not found." });
+      if (!task) {
+        return res.status(404).json({ message: "Task not found." });
+      }
+
+      // Ownership is validated in ownershipMiddleware, so no need to check here
+      if (task.userId.toString() !== req.user._id.toString()) {
+        return res
+          .status(403)
+          .json({ message: "You are not authorized to update this task." });
+      }
+
+      // Update task fields
+      task.title = req.body.title || task.title;
+      task.description = req.body.description || task.description;
+      task.deadline = req.body.deadline || task.deadline;
+      task.status = req.body.status || task.status;
+      task.category = req.body.category || task.category;
+      task.priority = req.body.priority || task.priority;
+      task.visibility = req.body.visibility || task.visibility;
+
+      const updatedTask = await task.save();
+      res.status(200).json(updatedTask);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
     }
-
-    // Check if the logged-in user is the owner of the task
-    if (task.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "You are not authorized to update this task." });
-    }
-
-    // Update task fields
-    task.title = req.body.title || task.title;
-    task.description = req.body.description || task.description;
-    task.deadline = req.body.deadline || task.deadline;
-    task.status = req.body.status || task.status;
-    task.category = req.body.category || task.category;
-    task.priority = req.body.priority || task.priority;
-    task.visibility = req.body.visibility || task.visibility;
-
-    const updatedTask = await task.save();
-    res.status(200).json(updatedTask);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
   }
-});
+);
 
 module.exports = router;

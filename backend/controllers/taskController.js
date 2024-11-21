@@ -34,6 +34,11 @@ const getTasks = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    // Log to check the filter and pagination
+    console.log("Fetching tasks with filter:", filter);
+    console.log(`Page: ${page}, Limit: ${limit}`);
+
+    // Fetch tasks
     const tasks = await Task.find(filter).skip(skip).limit(limit);
     const totalTasks = await Task.countDocuments(filter);
 
@@ -49,7 +54,11 @@ const getTasks = async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching tasks:", err.message, err.stack);
-    res.status(500).json({ success: false, message: "Error fetching tasks." });
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching tasks.",
+      error: err.message,  // Send more details in the error message for debugging
+    });
   }
 };
 

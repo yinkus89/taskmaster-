@@ -11,7 +11,11 @@ const LoadingSpinner = () => (
 // Category Select Component
 const CategorySelect = ({ categories, selectedCategory, onCategoryChange }) => {
   return (
-    <select name="category" value={selectedCategory} onChange={onCategoryChange}>
+    <select
+      name="category"
+      value={selectedCategory}
+      onChange={onCategoryChange}
+    >
       <option value="">Select Category</option>
       {categories.map((category) => (
         <option key={category._id} value={category._id}>
@@ -27,18 +31,41 @@ const TaskFormPage = () => {
   const [categoriesList, setCategoriesList] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
+  const [task, setTask] = useState({
+    title: "",
+    description: "",
+    deadline: "",
+    status: "pending",
+    category: "", // This should store category _id
+    priority: "",
+    visibility: "private",
+  });
+
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [loading, setLoading] = useState(false);
+
   // Fetch categories when the component mounts
   useEffect(() => {
     const storageToken = localStorage.getItem("token");
     setToken(storageToken);
 
+    if (!storageToken) {
+      setCategoriesList([]);
+      setLoadingCategories(false);
+      return;
+    }
+
     const fetchCategories = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/categories", {
-          headers: {
-            Authorization: `Bearer ${storageToken}`,
-          },
-        });
+        const response = await axios.get(
+          "http://localhost:5001/api/categories",
+          {
+            headers: {
+              Authorization: `Bearer ${storageToken}`,
+            },
+          }
+        );
 
         if (Array.isArray(response.data.categories)) {
           setCategoriesList(response.data.categories);
@@ -54,27 +81,8 @@ const TaskFormPage = () => {
       }
     };
 
-    if (storageToken) {
-      fetchCategories();
-    } else {
-      setCategoriesList([]);
-      setLoadingCategories(false);
-    }
+    fetchCategories();
   }, []);
-
-  const [task, setTask] = useState({
-    title: "",
-    description: "",
-    deadline: "",
-    status: "pending",
-    category: "", // This should store category _id
-    priority: "",
-    visibility: "private",
-  });
-
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -97,31 +105,41 @@ const TaskFormPage = () => {
     setSuccess(null);
 
     // Validate required fields
-    if (!task.title || !task.description || !task.deadline || !task.category || !task.priority) {
+    if (
+      !task.title ||
+      !task.description ||
+      !task.deadline ||
+      !task.category ||
+      !task.priority
+    ) {
       return setError("All fields must be filled out.");
+    }
+
+    // Validate priority range
+    if (task.priority < 1 || task.priority > 4) {
+      return setError("Priority must be between 1 and 4.");
     }
 
     const taskData = {
       title: task.title,
       description: task.description,
       deadline: task.deadline,
-      categoryId: task.category, // Ensure it's the category _id
+      category: task.category, // Make sure this maps correctly in the backend
       priority: task.priority,
       visibility: task.visibility,
     };
 
     try {
-      if (!token) {
-        return setError("Authorization token is missing. Please login.");
-      }
-
-      setLoading(true);
-
-      const response = await axios.post("http://localhost:5000/api/tasks", taskData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      setLoading(true); // Disable button when loading
+      const response = await axios.post(
+        "http://localhost:5001/api/tasks/create",
+        taskData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.status === 201) {
         setSuccess("Task created successfully!");
@@ -131,14 +149,21 @@ const TaskFormPage = () => {
           deadline: "",
           category: "",
           priority: "",
-          visibility: "private", // Reset visibility to default
+          visibility: "private",
+          status: "pending",
         });
       }
     } catch (error) {
-      console.error("Error creating task:", error.response?.data || error.message);
-      setError(error.response?.data?.message || "Failed to create task. Please try again.");
+      console.error(
+        "Error creating task:",
+        error.response?.data || error.message
+      );
+      setError(
+        error.response?.data?.message ||
+          "Failed to create task. Please try again."
+      );
     } finally {
-      setLoading(false);
+      setLoading(false); // Re-enable the button after loading is done
     }
   };
 

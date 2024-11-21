@@ -14,7 +14,7 @@ const EditTaskPage = () => {
   useEffect(() => {
     const fetchTask = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/tasks/${taskId}`, {
+        const response = await axios.get(`http://localhost:5001/api/tasks/${taskId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setTask(response.data);
@@ -38,7 +38,7 @@ const EditTaskPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:5000/api/tasks/${taskId}`, task, {
+      await axios.put(`http://localhost:5001/api/tasks/${taskId}`, task, {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert("Task updated successfully!");

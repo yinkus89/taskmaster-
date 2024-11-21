@@ -1,17 +1,23 @@
 const express = require('express');
 const Category = require('../models/Category');
+const { check, validationResult } = require('express-validator'); // For validation
 const router = express.Router();
-const { check, validationResult } = require('express-validator'); // To add validation for request body
 
-// Get all categories (with optional pagination)
+// Get all categories (with pagination)
 router.get('/', async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
 
+        // Validate page and limit
+        if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
+            return res.status(400).json({ message: 'Invalid pagination parameters' });
+        }
+
         // Fetch categories with pagination logic
         const categories = await Category.find()
             .skip((page - 1) * limit)  // Skip categories based on the page number
-            .limit(parseInt(limit));   // Limit categories returned
+            .limit(parseInt(limit))    // Limit categories returned
+            .sort({ priorityLevel: 1 }); // Optional: Sort by priority
 
         // Get the total count for pagination info
         const totalCategories = await Category.countDocuments();
