@@ -15,7 +15,7 @@ const TaskListPage = () => {
     setLoading(prev => ({ ...prev, categories: true }));
     setError(null);
     try {
-      const response = await axios.get("http://localhost:5001/api/categories");
+      const response = await axios.get("http://localhost:5000/api/categories");
       if (Array.isArray(response.data.categories)) {
         setCategories(response.data.categories);
       } else {
@@ -39,8 +39,8 @@ const TaskListPage = () => {
     }
 
     const url = selectedCategory
-      ? `http://localhost:5001/api/tasks?category=${selectedCategory}&page=${page}&limit=${tasksPerPage}`
-      : `http://localhost:5001/api/tasks?page=${page}&limit=${tasksPerPage}`;
+      ? `http://localhost:5000/api/tasks?category=${selectedCategory}&page=${page}&limit=${tasksPerPage}`
+      : `http://localhost:5000/api/tasks?page=${page}&limit=${tasksPerPage}`;
       
     const headers = {
       Authorization: `Bearer ${token}`,
@@ -69,18 +69,24 @@ const TaskListPage = () => {
 
   const handleTokenRefresh = async () => {
     try {
-      const response = await axios.post("http://localhost:5001/api/auth/refresh", {}, {
+      const response = await axios.post("http://localhost:5000/api/auth/refresh", {}, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      const newToken = response.data.token;
-      localStorage.setItem("token", newToken);
-      return true;
+  
+      if (response.data.token) {
+        const newToken = response.data.token;
+        localStorage.setItem("token", newToken);
+        return true;
+      } else {
+        console.error("No token received from server");
+        return false;
+      }
     } catch (error) {
       console.error("Error refreshing token:", error);
       return false;
     }
   };
-
+  
   const handleCategoryChange = (e) => {
     setSelectedCategory(e.target.value);
     setPage(1); // Reset page to 1 when the category changes

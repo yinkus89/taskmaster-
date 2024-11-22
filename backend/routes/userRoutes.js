@@ -4,10 +4,8 @@ const isAuthenticated = require("../middleware/authMiddleware");
 const router = express.Router();
 const Task = require("../models/Task");
 
-// Get profile data for the authenticated user
 
 
-// Get user profile with tasks
 router.get("/profile", isAuthenticated, async (req, res) => {
   try {
     // Fetch authenticated user data
@@ -29,46 +27,29 @@ router.get("/profile", isAuthenticated, async (req, res) => {
   }
 });
 
-
-
-// Route to update the authenticated user's profile
-router.patch("/profile", isAuthenticated, async (req, res) => {
+router.patch("/activate/:userId", isAuthenticated, async (req, res) => {
   try {
-    const allowedUpdates = ["name", "email", "avatar"];
-    const updates = Object.keys(req.body);
-    const isValidOperation = updates.every((key) => allowedUpdates.includes(key));
-
-    if (!isValidOperation) {
-      return res.status(400).json({ message: "Invalid fields in update" });
+    // Only allow admin users to activate other users
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admins only." });
     }
 
-    // Update user profile
-    const updatedUser = await User.findByIdAndUpdate(req.user._id, req.body, {
-      new: true, // Return the updated document
-      runValidators: true, // Enforce schema validation
-    });
-
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
     }
 
-    // Exclude sensitive data like password
-    const { password, ...profile } = updatedUser.toObject();
-    res.json({
-      message: "Profile updated successfully",
-      profile,
-    });
+    user.isActive = true; // Activate user
+    await user.save();
+    res.status(200).json({ message: "User activated successfully." });
   } catch (err) {
-    console.error("Error updating user profile:", err.message);
-    res.status(500).json({
-      message: "Server error",
-      error: err.message,
-    });
+    console.error(err);
+    res.status(500).json({ message: "Error activating user." });
   }
 });
 
 
-// GET /api/tasks/user/:userId
+
 router.get("/user/:userId", isAuthenticated, async (req, res) => {
   try {
     const { userId } = req.params;
@@ -87,6 +68,8 @@ router.get("/user/:userId", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Error fetching tasks" });
   }
 });
+
+
 
 
 module.exports = router;

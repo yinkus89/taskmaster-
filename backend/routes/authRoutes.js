@@ -63,37 +63,45 @@ router.post("/signup", async (req, res) => {
       });
   }
 });
-
-// Login route with rate limiting
-router.post("/login", loginLimiter, async (req, res) => {
-  // Fixed to use the correct middleware name 'loginLimiter'
-  const { email, password } = req.body;
-
-  if (!email || !password)
-    return res.status(400).json({ message: "Email and password are required" });
-
+router.post("/login", async (req, res) => {
   try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+    const { email, password } = req.body;
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(400).json({ message: "Invalid credentials" });
+    console.log("Login request received:", { email, password });
 
-    // Generate a token
-    const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "30h" }
-    );
-    res.status(200).json({ token });
-  } catch (error) {
-    console.error("Error during login:", error.message);
-    res
-      .status(500)
-      .json({ message: "Server error during login", error: error.message });
+    // Normalize email to lowercase
+    const normalizedEmail = email.toLowerCase();
+
+    // Find user by email
+    const user = await User.findOne({ email: normalizedEmail });
+    console.log("User lookup result:", user);
+
+    if (!user) {
+      console.log("User not found for email:", normalizedEmail);
+      return res.status(400).json({ message: "Validation failed: User not found" });
+    }
+
+    // Compare passwords
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log("Password match result:", isPasswordValid);
+
+    if (!isPasswordValid) {
+      console.log("Invalid password for email:", normalizedEmail);
+      return res.status(400).json({ message: "Validation failed: User not found" });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "30h" });
+    console.log("JWT token generated:", token);
+
+    res.status(200).json({ message: "Login successful", token });
+  } catch (err) {
+    console.error("Error during login:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
+
+
 
 // Update task route (PUT)
 router.put(

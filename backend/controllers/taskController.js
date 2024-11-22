@@ -36,7 +36,7 @@ const getTasks = async (req, res) => {
 
     // Log to check the filter and pagination
     console.log("Fetching tasks with filter:", filter);
-    console.log(`Page: ${page}, Limit: ${limit}`);
+    console.log(Page:${page}, Limit: ${limi})
 
     // Fetch tasks
     const tasks = await Task.find(filter).skip(skip).limit(limit);

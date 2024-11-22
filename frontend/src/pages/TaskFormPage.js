@@ -8,6 +8,20 @@ const LoadingSpinner = () => (
   </div>
 );
 
+// Text Input Component for Reusability
+const TextInput = ({ label, name, value, onChange, placeholder, type = "text" }) => (
+  <div>
+    <label>{label}</label>
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+    />
+  </div>
+);
+
 // Category Select Component
 const CategorySelect = ({ categories, selectedCategory, onCategoryChange }) => {
   return (
@@ -36,7 +50,7 @@ const TaskFormPage = () => {
     description: "",
     deadline: "",
     status: "pending",
-    category: "", // This should store category _id
+    category: "",
     priority: "",
     visibility: "private",
   });
@@ -59,7 +73,7 @@ const TaskFormPage = () => {
     const fetchCategories = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5001/api/categories",
+          "http://localhost:5000/api/categories",
           {
             headers: {
               Authorization: `Bearer ${storageToken}`,
@@ -83,6 +97,17 @@ const TaskFormPage = () => {
 
     fetchCategories();
   }, []);
+
+  // Auto-hide success/error messages
+  useEffect(() => {
+    if (success || error) {
+      const timer = setTimeout(() => {
+        setError(null);
+        setSuccess(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, error]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -115,6 +140,11 @@ const TaskFormPage = () => {
       return setError("All fields must be filled out.");
     }
 
+    // Validate deadline date
+    if (new Date(task.deadline) <= new Date()) {
+      return setError("Deadline must be a future date.");
+    }
+
     // Validate priority range
     if (task.priority < 1 || task.priority > 4) {
       return setError("Priority must be between 1 and 4.");
@@ -124,15 +154,15 @@ const TaskFormPage = () => {
       title: task.title,
       description: task.description,
       deadline: task.deadline,
-      category: task.category, // Make sure this maps correctly in the backend
+      category: task.category,
       priority: task.priority,
       visibility: task.visibility,
     };
 
     try {
-      setLoading(true); // Disable button when loading
+      setLoading(true);
       const response = await axios.post(
-        "http://localhost:5001/api/tasks/create",
+        "http://localhost:5000/api/tasks/create",
         taskData,
         {
           headers: {
@@ -163,7 +193,7 @@ const TaskFormPage = () => {
           "Failed to create task. Please try again."
       );
     } finally {
-      setLoading(false); // Re-enable the button after loading is done
+      setLoading(false);
     }
   };
 
@@ -175,13 +205,12 @@ const TaskFormPage = () => {
       {error && <p className="error">{error}</p>}
 
       <form onSubmit={handleSubmit}>
-        <input
-          type="text"
+        <TextInput
+          label="Title"
           name="title"
           value={task.title}
           onChange={handleChange}
           placeholder="Task Title"
-          required
         />
         <textarea
           name="description"
@@ -190,12 +219,13 @@ const TaskFormPage = () => {
           placeholder="Task Description"
           required
         />
-        <input
-          type="date"
+        <TextInput
+          label="Deadline"
           name="deadline"
           value={task.deadline}
           onChange={handleChange}
-          required
+          placeholder="Task Deadline"
+          type="date"
         />
         <select name="status" value={task.status} onChange={handleChange}>
           <option value="pending">Pending</option>
@@ -213,15 +243,13 @@ const TaskFormPage = () => {
           />
         )}
 
-        <input
-          type="number"
+        <TextInput
+          label="Priority"
           name="priority"
           value={task.priority}
           onChange={handleChange}
           placeholder="Priority (1-4)"
-          required
-          min="1"
-          max="4"
+          type="number"
         />
 
         <div>

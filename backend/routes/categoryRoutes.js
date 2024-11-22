@@ -2,6 +2,7 @@ const express = require('express');
 const Category = require('../models/Category');
 const { check, validationResult } = require('express-validator'); // For validation
 const router = express.Router();
+const isAuthenticated = require('../middleware/authMiddleware');
 
 // Get all categories (with pagination)
 router.get('/', async (req, res) => {
@@ -33,16 +34,20 @@ router.get('/', async (req, res) => {
         res.status(500).json({ message: 'Error fetching categories', error: error.message });
     }
 });
-
-// Create a new category with validation
 router.post(
     '/',
+    isAuthenticated, // Add authentication middleware
     [
         check('name', 'Category name is required').not().isEmpty(),
         check('description', 'Description must be at least 10 characters long').isLength({ min: 10 }),
         check('priorityLevel', 'Priority level must be between 1 and 4').isInt({ min: 1, max: 4 }),
     ],
     async (req, res) => {
+        // Only allow admins to create categories
+        if (!req.user.isAdmin) {
+            return res.status(403).json({ message: 'Access denied. Admins only.' });
+        }
+
         // Check for validation errors
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -52,23 +57,18 @@ router.post(
         const { name, description, priorityLevel } = req.body;
 
         try {
-            // Check if the category already exists
             const existingCategory = await Category.findOne({ name });
             if (existingCategory) {
                 return res.status(400).json({ message: 'Category with this name already exists' });
             }
 
-            // Create a new category
             const newCategory = new Category({
                 name,
                 description,
                 priorityLevel,
             });
 
-            // Save the category to the database
             await newCategory.save();
-
-            // Respond with the created category
             res.status(201).json(newCategory);
         } catch (error) {
             console.error(error);

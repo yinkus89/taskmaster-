@@ -27,10 +27,16 @@ const TaskDetailsPage = () => {
         setTask(response.data.task);
       } catch (err) {
         console.error('Error fetching task details:', err);
-        if (err.response && err.response.status === 404) {
-          setError('Task not found.');
+        if (err.response) {
+          if (err.response.status === 404) {
+            setError('Task not found.');
+          } else if (err.response.status === 500) {
+            setError('Server error. Please try again later.');
+          } else {
+            setError('Failed to load task details.');
+          }
         } else {
-          setError('Failed to load task details.');
+          setError('Network error. Please check your internet connection.');
         }
       }
     };
@@ -40,7 +46,7 @@ const TaskDetailsPage = () => {
 
   if (error) {
     return (
-      <div style={{ backgroundColor: theme.background, color: theme.color }}>
+      <div style={{ backgroundColor: theme?.background || '#fff', color: theme?.color || '#000' }}>
         <h1>Error</h1>
         <p>{error}</p>
         <button onClick={() => navigate('/tasks')}>Go to Task List</button>
@@ -50,7 +56,7 @@ const TaskDetailsPage = () => {
 
   if (!task) {
     return (
-      <div style={{ backgroundColor: theme.background, color: theme.color }}>
+      <div style={{ backgroundColor: theme?.background || '#fff', color: theme?.color || '#000' }}>
         <h1>Loading task details...</h1>
       </div>
     );
@@ -60,7 +66,7 @@ const TaskDetailsPage = () => {
   const formattedDeadline = new Date(task.deadline).toLocaleDateString();
 
   return (
-    <div style={{ backgroundColor: theme.background, color: theme.color }}>
+    <div style={{ backgroundColor: theme?.background || '#fff', color: theme?.color || '#000' }}>
       <h1>Task Details</h1>
       <p><strong>Title:</strong> {task.title}</p>
       <p><strong>Description:</strong> {task.description}</p>

@@ -16,7 +16,7 @@ const PublicTasksPage = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const tasksResponse = await axios.get("http://localhost:5001/api/tasks/public", {
+      const tasksResponse = await axios.get("http://localhost:5000/api/tasks/public", {
         headers: {
           Authorization: token ? `Bearer ${token}` : "",  // Attach token if available
         }

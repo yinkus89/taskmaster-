@@ -31,7 +31,7 @@ function ProfilePage() {
 
       const fetchTasks = async (page = 1, limit = 10) => {
         try {
-          const response = await axios.get(`http://localhost:5001/api/tasks?page=${page}&limit=${limit}`, {
+          const response = await axios.get(`http://localhost:5000/api/tasks?page=${page}&limit=${limit}`, {
             headers: { Authorization: `Bearer ${storedToken}` },
           });
       
@@ -71,7 +71,7 @@ function ProfilePage() {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.patch(
-        'http://localhost:5001/api/user/profile',
+        'http://localhost:5000/api/user/profile',
         updatedData,
         { headers: { Authorization: `Bearer ${token}` } }
       );

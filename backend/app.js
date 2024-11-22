@@ -51,14 +51,13 @@ const rateLimiter = rateLimit({
 });
 app.use(rateLimiter);
 
-// Task routes (now only under taskRoutes)
-app.use("/api/tasks", authMiddleware, taskRoutes); // Task-related routes (protected by authMiddleware)
+app.use("/api/tasks/", authMiddleware, taskRoutes);
 
 // Other API routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
-app.use('/api/tasks', taskRoutes);
+
 // Health check route
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "Server is healthy!" });
@@ -86,7 +85,7 @@ process.on("SIGTERM", () => {
 });
 
 // Start the server
-const port = process.env.PORT || 5001;
+const port = process.env.PORT || 5000;
 const server = app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
