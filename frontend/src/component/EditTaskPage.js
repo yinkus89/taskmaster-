@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useParams, useHistory } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const EditTaskPage = () => {
   const { taskId } = useParams();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [token] = useState(localStorage.getItem("token")); // Keeping token for fetching tasks
 
   useEffect(() => {
     const fetchTask = async () => {
       try {
-        const response = await axios.get(`http://localhost:5001/api/tasks/${taskId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          `http://localhost:5000/api/tasks/${taskId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setTask(response.data);
         setLoading(false);
       } catch (err) {
@@ -38,11 +41,11 @@ const EditTaskPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:5001/api/tasks/${taskId}`, task, {
+      await axios.put(`http://localhost:5000/api/tasks/${taskId}`, task, {
         headers: { Authorization: `Bearer ${token}` },
       });
       alert("Task updated successfully!");
-      history.push("/profile"); // Redirect back to profile
+      navigate("/profile"); // Redirect back to profile
     } catch (err) {
       alert("Failed to update task.");
     }
@@ -60,20 +63,20 @@ const EditTaskPage = () => {
         <input
           type="text"
           name="title"
-          value={task.title}
+          value={task?.title || ""}
           onChange={handleChange}
           placeholder="Task Title"
         />
         <textarea
           name="description"
-          value={task.description}
+          value={task?.description || ""}
           onChange={handleChange}
           placeholder="Task Description"
         />
         <input
           type="date"
           name="deadline"
-          value={task.deadline}
+          value={task?.deadline || ""}
           onChange={handleChange}
         />
         <button type="submit">Update Task</button>

@@ -15,7 +15,6 @@ const PublicTasksPage = lazy(() => import("./pages/PublicTasksPage"));
 const PublicTaskDetailsPage = lazy(() => import("./pages/PublicTaskDetailsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const AboutUsPage = lazy(() => import("./pages/AboutUsPage"));
-
 function App() {
   return (
     <>
