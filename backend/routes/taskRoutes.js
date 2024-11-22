@@ -4,8 +4,9 @@ const Task = require("../models/Task");
 const isAuthenticated = require("../middleware/authMiddleware");
 const ownershipMiddleware = require("../middleware/ownershipMiddleware");
 
-// Create a new task
-router.post("/create", async (req, res) => {
+
+
+router.post("/api/tasks/create", async (req, res) => {
   try {
     const { title, description, deadline, category, priority, visibility } =
       req.body;
@@ -37,14 +38,18 @@ router.post("/create", async (req, res) => {
     res.status(500).json({ success: false, message: "Error creating task." });
   }
 });
-// Get all tasks (Admin-only access)
+
+
+//Get all tasks (Admin-only access)
 router.get("/", isAuthenticated, async (req, res) => {
   try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admins only." });
+    if (req.user.isAdmin) {
+      const tasks = await Task.find();
+      return res.status(200).json({ success: true, tasks });
     }
 
-    const tasks = await Task.find();
+    // If not admin, fetch tasks for the authenticated user
+    const tasks = await Task.find({ userId: req.user._id }).populate("categoryId", "name");
     res.status(200).json({ success: true, tasks });
   } catch (err) {
     console.error("Error fetching tasks:", err.message);
@@ -52,16 +57,6 @@ router.get("/", isAuthenticated, async (req, res) => {
   }
 });
 
-// Get all tasks
-router.get("/", async (req, res) => {
-  try {
-    const tasks = await Task.find(); // Fetch tasks using the model
-    res.status(200).json({ success: true, tasks });
-  } catch (err) {
-    console.error("Error fetching tasks:", err.message);
-    res.status(500).json({ success: false, message: "Error fetching tasks." });
-  }
-});
 
 module.exports = router;
 
@@ -152,7 +147,31 @@ router.delete(
     }
   }
 );
+router.post("/create", async (req, res) => {
+  try {
+    const { title, description, deadline, category, priority, visibility } = req.body;
 
+    if (!title || !description || !deadline || !category || !priority) {
+      return res.status(400).json({ success: false, message: "All fields are required." });
+    }
+
+    const newTask = new Task({
+      title,
+      description,
+      deadline,
+      category,
+      priority,
+      visibility: visibility || "private", // Default to private
+      userId: req.user._id, // Assuming authentication middleware sets this
+    });
+
+    await newTask.save();
+    res.status(201).json({ success: true, task: newTask });
+  } catch (error) {
+    console.error("Error creating task:", error.message);
+    res.status(500).json({ success: false, message: "Error creating task." });
+  }
+});
 // PUT (Update) Task route
 router.put(
   "/:taskId",
